@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SAPOMAYA INC | OFFICIAL</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--green:#4bf542;--green-dark:#1a7a3a;--green-dim:rgba(75,245,66,0.12);--yellow:#ffcc00;--card-bg:rgba(10,20,12,0.92);--card-border:rgba(75,245,66,0.18);--text-muted:#5a7a5e;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+html,body{min-height:100vh;overscroll-behavior:none;}
+body{font-family:'Nunito',sans-serif;background:radial-gradient(ellipse at 20% 0%,rgba(75,245,66,0.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(26,122,58,0.10) 0%,transparent 60%),linear-gradient(180deg,#060e08 0%,#030a05 100%);background-attachment:fixed;color:white;}
+#loadingScreen{position:fixed;inset:0;z-index:99999;background:#060e08;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.loading-frog{font-size:60px;animation:salto 1.6s ease-in-out infinite;}
+.loading-text{font-family:'Fredoka One',cursive;color:var(--green);font-size:14px;letter-spacing:2px;opacity:0.7;}
+#loginScreen{position:fixed;inset:0;z-index:9999;background:radial-gradient(ellipse at 30% 20%,rgba(75,245,66,0.09) 0%,transparent 55%),linear-gradient(180deg,#060e08 0%,#030a05 100%);display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px 20px;overflow-y:auto;}
+.login-frog{font-size:52px;animation:salto 1.6s ease-in-out infinite;filter:drop-shadow(0 0 22px rgba(75,245,66,0.55));display:inline-block;margin-bottom:4px;}
+.login-title{font-family:'Fredoka One',cursive;font-size:22px;color:var(--green);letter-spacing:2px;margin-bottom:2px;text-shadow:0 0 24px rgba(75,245,66,0.3);}
+.login-sub{font-size:9px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;}
+.login-card{width:100%;max-width:340px;background:rgba(10,20,12,0.95);border:1px solid var(--card-border);border-radius:20px;padding:20px 18px;backdrop-filter:blur(10px);}
+.login-tabs{display:flex;gap:6px;margin-bottom:16px;}
+.ltab{flex:1;background:rgba(255,255,255,0.03);border:1px solid transparent;color:var(--text-muted);padding:9px;border-radius:10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;cursor:pointer;font-family:'Nunito',sans-serif;transition:all 0.2s;outline:none;user-select:none;}
+.ltab.active{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+.input-group{margin-bottom:11px;position:relative;}
+.input-group label{display:block;font-size:9px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.input-group input{width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(75,245,66,0.15);border-radius:10px;padding:11px 13px;color:white;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;outline:none;transition:border-color 0.2s;}
+.input-group input:focus{border-color:rgba(75,245,66,0.5);}
+.input-group input::placeholder{color:#3a5a3e;}
+.btn-login{background:linear-gradient(135deg,var(--green),#28c023);border:none;padding:13px;width:100%;border-radius:12px;font-family:'Fredoka One',cursive;font-size:16px;color:#030a05;cursor:pointer;letter-spacing:1px;margin-top:4px;box-shadow:0 4px 20px rgba(75,245,66,0.25);transition:transform 0.15s,opacity 0.2s;outline:none;user-select:none;}
+.btn-login:active{transform:scale(0.98);}
+.btn-login:disabled{opacity:0.5;cursor:not-allowed;}
+.login-error{color:#ff5555;font-size:11px;font-weight:700;text-align:center;margin-top:8px;min-height:16px;}
+#coinBar{position:fixed;top:16px;right:15px;background:rgba(0,0,0,0.75);padding:8px 16px;border-radius:20px;border:1px solid var(--green);z-index:1000;font-weight:800;font-size:13px;color:var(--green);font-family:'Fredoka One',cursive;letter-spacing:0.5px;backdrop-filter:blur(8px);box-shadow:0 0 14px rgba(75,245,66,0.15);display:none;}
+.main-wrapper{padding:20px 15px 120px;max-width:480px;margin:0 auto;}
+.page-content{display:none;animation:fadeIn 0.3s ease;}
+.page-content.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+@keyframes salto{0%,100%{transform:translateY(0) scaleY(1);}45%{transform:translateY(-24px) scaleY(1.05);}55%{transform:translateY(-26px) scaleY(1.05);}80%{transform:translateY(0) scaleY(0.92) scaleX(1.08);}}
+.section-title{font-family:'Fredoka One',cursive;font-size:20px;color:var(--green);margin-bottom:16px;letter-spacing:0.5px;}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(10,20,12,0.97);border:1px solid var(--green);border-radius:14px;padding:10px 22px;font-family:'Fredoka One',cursive;font-size:14px;color:var(--green);z-index:9998;opacity:0;transition:all 0.3s;pointer-events:none;backdrop-filter:blur(10px);white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.modal-overlay{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center;padding:0 10px 20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:linear-gradient(180deg,#0a1a0c,#060e08);border:1px solid var(--card-border);border-radius:24px;padding:28px 22px;width:100%;max-width:460px;animation:slideUp 0.3s ease;}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-title{font-family:'Fredoka One',cursive;font-size:18px;color:var(--green);margin-bottom:18px;font-weight:400;}
+.modal-btn{background:linear-gradient(135deg,var(--green),#28c023);border:none;padding:14px;width:100%;border-radius:12px;font-family:'Fredoka One',cursive;font-size:17px;color:#030a05;cursor:pointer;margin-top:8px;transition:opacity 0.2s;outline:none;user-select:none;}
+.modal-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.modal-btn-cancel{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px;width:100%;color:#5a7a5e;font-family:'Fredoka One',cursive;font-size:15px;cursor:pointer;margin-top:8px;font-weight:400;outline:none;user-select:none;}
+#modalRecargar .modal-box{padding:0;overflow:hidden;}
+#recargaStep1{padding:28px 22px;}
+#recargaStep2{padding:28px 22px;display:none;}
+#recargaStep3{padding:28px 22px;display:none;}
+.recarga-logo{width:58px;height:58px;margin:0 auto 10px;border-radius:16px;background:linear-gradient(135deg,#00ff88,#00c853);display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 0 20px rgba(0,255,136,0.35);}
+.recarga-titulo{text-align:center;color:white;font-size:22px;font-weight:700;font-family:'Poppins',sans-serif;}
+.recarga-sub{text-align:center;color:#5a7a5e;font-size:12px;margin-top:4px;margin-bottom:20px;font-family:'Poppins',sans-serif;}
+.recarga-input-box{position:relative;margin-bottom:18px;}
+.recarga-input-box input{width:100%;padding:16px 52px 16px 18px;border:1px solid rgba(75,245,66,0.15);outline:none;border-radius:16px;background:rgba(0,0,0,0.5);color:white;font-size:17px;font-family:'Poppins',sans-serif;font-weight:600;transition:.3s;}
+.recarga-input-box input:focus{border-color:#4bf542;box-shadow:0 0 12px rgba(75,245,66,0.2);}
+.recarga-input-box input::placeholder{color:#3a5a3e;}
+.recarga-input-box span{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:#4bf542;font-weight:700;font-size:13px;font-family:'Poppins',sans-serif;}
+.montos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px;}
+.monto-btn{border:1px solid rgba(75,245,66,0.12);border-radius:14px;padding:14px 8px;font-size:15px;font-weight:700;cursor:pointer;color:white;background:rgba(10,20,12,0.8);transition:.22s;font-family:'Poppins',sans-serif;}
+.monto-btn:hover{background:linear-gradient(135deg,#4bf542,#28c023);color:#030a05;border-color:transparent;transform:translateY(-2px);}
+.btn-recarga-next{width:100%;margin-top:20px;padding:16px;border:none;border-radius:16px;font-size:17px;font-weight:700;color:#030a05;cursor:pointer;background:linear-gradient(135deg,#4bf542,#28c023);transition:.3s;font-family:'Poppins',sans-serif;box-shadow:0 8px 22px rgba(75,245,66,0.22);}
+.recarga-back-btn{display:flex;align-items:center;gap:7px;background:none;border:none;color:#5a7a5e;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;padding:0;margin-bottom:16px;transition:.2s;}
+.recarga-back-btn:hover{color:#4bf542;}
+.monto-resumen{background:rgba(0,0,0,0.4);border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border:1px solid rgba(75,245,66,0.12);}
+.monto-resumen .label{color:#5a7a5e;font-size:12px;font-family:'Poppins',sans-serif;}
+.monto-resumen .valor{color:white;font-size:20px;font-weight:700;font-family:'Poppins',sans-serif;}
+.monto-resumen .valor span{color:#4bf542;font-size:13px;margin-left:4px;}
+.banco-card{background:linear-gradient(135deg,#0a1f0c,#0d2e12);border:1px solid rgba(75,245,66,0.25);border-radius:18px;padding:18px;margin-bottom:16px;}
+.banco-card-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:12px;font-family:'Poppins',sans-serif;}
+.banco-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(75,245,66,0.08);}
+.banco-row:last-child{border-bottom:none;}
+.banco-row .bl{font-size:11px;color:var(--text-muted);font-weight:700;font-family:'Poppins',sans-serif;}
+.banco-row .bv{font-size:13px;color:white;font-weight:700;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:8px;}
+.copy-btn{background:rgba(75,245,66,0.1);border:1px solid rgba(75,245,66,0.2);color:var(--green);padding:3px 8px;border-radius:6px;font-size:10px;font-weight:800;cursor:pointer;outline:none;font-family:'Nunito',sans-serif;}
+.banco-alerta{background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.25);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:#ffcc00;font-weight:700;font-family:'Poppins',sans-serif;line-height:1.5;}
+.upload-area{border:2px dashed rgba(75,245,66,0.25);border-radius:16px;padding:22px;text-align:center;cursor:pointer;transition:.3s;margin-bottom:14px;position:relative;overflow:hidden;}
+.upload-area:hover,.upload-area.drag{border-color:var(--green);background:rgba(75,245,66,0.05);}
+.upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:32px;margin-bottom:6px;display:block;}
+.upload-text{font-size:13px;font-weight:700;color:white;font-family:'Poppins',sans-serif;}
+.upload-sub{font-size:10px;color:var(--text-muted);margin-top:3px;font-family:'Poppins',sans-serif;}
+.upload-preview{width:100%;border-radius:12px;margin-top:10px;display:none;max-height:160px;object-fit:cover;}
+.btn-enviar-comp{width:100%;padding:15px;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:17px;letter-spacing:1px;cursor:not-allowed;transition:.3s;outline:none;background:rgba(75,245,66,0.05);color:#3a5a3e;border:1px solid rgba(75,245,66,0.1);}
+.btn-enviar-comp.activo{background:linear-gradient(135deg,var(--green),#28c023);color:#030a05;cursor:pointer;box-shadow:0 8px 24px rgba(75,245,66,0.28);border-color:transparent;}
+.hero{text-align:center;padding:36px 0 24px;}
+.hero-frog{font-size:72px;animation:salto 1.6s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(75,245,66,0.5));display:inline-block;}
+.hero-name{font-family:'Fredoka One',cursive;font-size:28px;color:var(--green);margin-top:10px;text-shadow:0 0 20px rgba(75,245,66,0.3);letter-spacing:2px;}
+.hero-slogan{color:var(--text-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;margin-top:6px;}
+.plan-card{background:var(--card-bg);border-radius:20px;overflow:hidden;border:1px solid var(--card-border);margin-bottom:16px;backdrop-filter:blur(6px);}
+.plan-banner{background:linear-gradient(135deg,#0a1f0c 0%,#0d2e12 50%,#071508 100%);padding:28px 20px;text-align:center;border-bottom:1px solid var(--card-border);position:relative;overflow:hidden;}
+.plan-banner::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(75,245,66,0.02) 20px,rgba(75,245,66,0.02) 40px);}
+.plan-icon{font-size:52px;display:block;margin-bottom:10px;filter:drop-shadow(0 0 12px rgba(75,245,66,0.4));position:relative;}
+.plan-label{font-family:'Fredoka One',cursive;font-size:22px;color:var(--green);letter-spacing:1px;position:relative;}
+.plan-sub{font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;position:relative;}
+.plan-body{padding:20px;}
+.plan-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.plan-stat{background:rgba(75,245,66,0.05);border:1px solid rgba(75,245,66,0.1);border-radius:12px;padding:12px 8px;text-align:center;}
+.plan-stat-val{font-family:'Fredoka One',cursive;font-size:15px;color:var(--green);display:block;}
+.plan-stat-label{font-size:9px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-top:2px;display:block;}
+.plan-stats-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.btn-invest{background:linear-gradient(135deg,var(--green),#28c023);border:none;padding:15px;width:100%;border-radius:12px;font-family:'Fredoka One',cursive;font-size:18px;color:#030a05;cursor:pointer;letter-spacing:1px;box-shadow:0 4px 20px rgba(75,245,66,0.25);transition:transform 0.15s;outline:none;user-select:none;}
+.btn-invest:active{transform:scale(0.98);}
+.mining-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.m-box{background:var(--card-bg);padding:18px 15px;border-radius:16px;text-align:center;border:1px solid var(--card-border);}
+.m-box span{font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.m-box b{display:block;font-family:'Fredoka One',cursive;font-size:20px;color:var(--green);margin-top:4px;}
+.active-plan{background:var(--card-bg);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;border:1px solid rgba(75,245,66,0.2);}
+.plan-thumb{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#0a1f0c,#0d2e12);border:1px solid var(--card-border);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;}
+.bar-bg{background:rgba(0,0,0,0.5);height:6px;border-radius:3px;flex:1;overflow:hidden;margin-top:6px;}
+.bar-fill{background:linear-gradient(90deg,var(--green-dark),var(--green));height:100%;width:0%;transition:width 1s linear;border-radius:3px;}
+.earn-badge{font-size:10px;font-weight:800;color:var(--green);background:rgba(75,245,66,0.1);border:1px solid rgba(75,245,66,0.2);border-radius:8px;padding:2px 8px;margin-top:4px;display:inline-block;}
+.eq-stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+.eq-stat-item{background:rgba(30,30,30,0.85);padding:15px;border-radius:12px;text-align:center;font-size:13px;color:#bbb;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(5px);}
+.eq-stat-item b{display:block;color:#fff;font-size:18px;margin-top:5px;font-family:'Fredoka One',cursive;font-weight:400;}
+.current-vip-status{background:linear-gradient(90deg,rgba(255,204,0,0.15),rgba(30,30,30,0.9));padding:12px 15px;border-radius:12px;border:1px solid rgba(255,204,0,0.5);margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(5px);}
+.status-label{font-size:13px;color:#ccc;font-weight:700;}
+.status-rank{font-size:17px;font-weight:800;color:var(--yellow);font-family:'Fredoka One',cursive;}
+.vip-container{width:100%;overflow:hidden;position:relative;margin-bottom:20px;touch-action:pan-y;}
+.vip-track{display:flex;transition:transform 0.4s ease-out;align-items:center;}
+.vip-card-item{flex:0 0 82%;margin:0 8px;background:linear-gradient(145deg,rgba(60,60,60,0.98),rgba(15,15,15,0.98));border-radius:20px;padding:20px;border:1px solid #444;box-sizing:border-box;opacity:0.4;transform:scale(0.9);transition:0.3s;}
+.vip-card-item.active{opacity:1;transform:scale(1);border-color:var(--yellow);box-shadow:0 10px 25px rgba(0,0,0,0.5);}
+.vip-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.vip-card-header h2{margin:0;font-size:26px;color:#fff;letter-spacing:1px;font-family:'Fredoka One',cursive;font-weight:400;}
+.vip-share-btn{background:#fff;color:#000;border:none;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;outline:none;user-select:none;}
+.vip-card-desc{font-size:13px;color:#ddd;text-align:left;line-height:1.5;min-height:65px;}
+.vip-card-price{text-align:right;color:var(--yellow);font-size:16px;font-weight:800;margin-top:10px;font-family:'Fredoka One',cursive;}
+.comision-card{background:rgba(0,0,0,0.8);padding:18px;border-radius:16px;border:1px solid #333;backdrop-filter:blur(5px);}
+.comision-card h4{color:var(--yellow);margin-bottom:14px;font-family:'Fredoka One',cursive;font-size:17px;font-weight:400;}
+.comision-levels{display:flex;flex-direction:column;gap:8px;}
+.comision-level{display:flex;justify-content:space-between;align-items:center;background:rgba(255,204,0,0.04);border:1px solid rgba(255,204,0,0.1);border-radius:10px;padding:10px 14px;}
+.comision-level span{font-size:12px;color:#888;font-weight:700;}
+.comision-level b{font-family:'Fredoka One',cursive;color:var(--yellow);font-size:16px;font-weight:400;}
+.filter-tabs{display:flex;gap:6px;margin-bottom:16px;}
+.ftab{flex:1;background:rgba(255,255,255,0.03);border:1px solid transparent;color:var(--text-muted);padding:11px;border-radius:10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;cursor:pointer;font-family:'Nunito',sans-serif;transition:all 0.2s;outline:none;user-select:none;}
+.ftab.active{border-color:var(--green);color:var(--green);background:var(--green-dim);}
+.hist-item{background:var(--card-bg);border-radius:12px;padding:14px 16px;margin-bottom:8px;border:1px solid var(--card-border);display:flex;align-items:center;justify-content:space-between;}
+.hist-icon{font-size:20px;margin-right:12px;}
+.hist-label{font-size:13px;font-weight:700;}
+.hist-date{font-size:10px;color:var(--text-muted);margin-top:2px;}
+.hist-amount{font-family:'Fredoka One',cursive;font-size:16px;font-weight:400;}
+.hist-amount.pos{color:var(--green);}
+.hist-amount.neg{color:#ff5555;}
+.hist-amount.neu{color:var(--yellow);}
+.profile-head{text-align:center;padding:24px 0 20px;}
+.profile-head h4{font-family:'Fredoka One',cursive;font-size:20px;margin:10px 0 6px;font-weight:400;letter-spacing:0.5px;}
+.vip-badge{background:linear-gradient(135deg,var(--green),#28c023);color:#030a05;padding:3px 12px;border-radius:12px;font-size:10px;font-weight:800;letter-spacing:1px;}
+.ref-box{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.ref-code{font-family:'Fredoka One',cursive;color:var(--green);font-size:16px;letter-spacing:1px;}
+.ref-copy{background:var(--green-dim);border:1px solid rgba(75,245,66,0.2);color:var(--green);padding:6px 12px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;outline:none;user-select:none;}
+.menu-item{background:var(--card-bg);padding:16px;border-radius:12px;display:flex;align-items:center;gap:14px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.04);font-size:14px;font-weight:600;cursor:pointer;transition:border-color 0.2s;user-select:none;}
+.menu-item:hover{border-color:var(--card-border);}
+.menu-item i{color:var(--green);width:20px;text-align:center;font-size:16px;}
+.menu-item.danger{color:#ff5555;}
+.menu-item.danger i{color:#ff5555;}
+.sub-page{display:none;position:fixed;inset:0;z-index:3000;background:radial-gradient(ellipse at 20% 0%,rgba(75,245,66,0.06) 0%,transparent 60%),linear-gradient(180deg,#060e08 0%,#030a05 100%);overflow-y:auto;animation:fadeIn 0.25s ease;}
+.sub-page.open{display:block;}
+.sub-page-header{display:flex;align-items:center;gap:14px;padding:16px 16px 12px;position:sticky;top:0;background:rgba(6,14,8,0.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--card-border);z-index:1;}
+.sub-back-btn{width:38px;height:38px;border-radius:50%;background:var(--green-dim);border:1px solid rgba(75,245,66,0.25);color:var(--green);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;outline:none;flex-shrink:0;}
+.sub-page-title{font-family:'Fredoka One',cursive;font-size:18px;color:var(--green);letter-spacing:0.5px;}
+.sobre-container{max-width:480px;margin:0 auto;padding:24px 18px 100px;}
+.sobre-h1{text-align:center;font-family:'Fredoka One',cursive;font-size:32px;color:var(--green);letter-spacing:2px;margin-bottom:20px;font-weight:400;text-shadow:0 0 20px rgba(75,245,66,0.3);}
+.sobre-h2{font-family:'Fredoka One',cursive;font-size:18px;color:var(--green);margin:24px 0 10px;font-weight:400;}
+.sobre-p{font-size:14px;line-height:1.8;color:#a0b8a4;margin-bottom:14px;}
+.sobre-ul{padding-left:18px;display:flex;flex-direction:column;gap:8px;}
+.sobre-ul li{font-size:14px;color:#a0b8a4;padding:8px 12px;background:var(--green-dim);border:1px solid rgba(75,245,66,0.12);border-radius:10px;list-style:none;}
+.sobre-ul li::before{content:'🐸 ';}
+nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);width:94%;max-width:460px;background:linear-gradient(135deg,#060e08ee,#0a1a0cee);display:none;padding:8px 6px;border-radius:28px;border:1px solid rgba(75,245,66,0.25);z-index:1000;backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 0 1px rgba(75,245,66,0.05),inset 0 1px 0 rgba(75,245,66,0.08);gap:4px;}
+nav.visible{display:flex;}
+nav a{flex:1;text-decoration:none;color:#3a5a3e;text-align:center;font-size:9px;font-weight:800;display:flex;flex-direction:column;align-items:center;gap:3px;text-transform:uppercase;letter-spacing:0.4px;padding:8px 4px;border-radius:20px;transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);outline:none;user-select:none;}
+nav a .nav-emoji{font-size:22px;transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);display:block;line-height:1;}
+nav a.active{background:linear-gradient(135deg,rgba(75,245,66,0.18),rgba(40,192,35,0.1));color:var(--green);box-shadow:0 0 16px rgba(75,245,66,0.2),inset 0 1px 0 rgba(75,245,66,0.15);border:1px solid rgba(75,245,66,0.2);}
+nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shadow(0 0 6px rgba(75,245,66,0.6));}
+#modalRetirar.modal-overlay{align-items:center;justify-content:center;padding:20px;}
+#modalRetirar .modal-box{padding:0;overflow:hidden;background:linear-gradient(180deg,#0d1f10,#060e08);border:1px solid rgba(75,245,66,0.2);border-radius:24px;max-width:400px;}
+.retiro-card{padding:26px 20px;position:relative;}
+.retiro-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.retiro-icon-wrap{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,rgba(75,245,66,0.2),rgba(40,192,35,0.1));border:1px solid rgba(75,245,66,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.retiro-header-text h3{font-family:'Fredoka One',cursive;font-size:20px;color:white;font-weight:400;margin:0 0 2px;}
+.retiro-header-text p{font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0;}
+.retiro-saldo-box{background:rgba(75,245,66,0.06);border:1px solid rgba(75,245,66,0.15);border-radius:14px;padding:13px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+.rs-label{font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.rs-valor{font-family:'Fredoka One',cursive;font-size:20px;color:var(--green);letter-spacing:0.5px;}
+.retiro-input-wrap{position:relative;margin-bottom:12px;}
+.retiro-input-wrap input{width:100%;background:rgba(0,0,0,0.45);border:1px solid rgba(75,245,66,0.18);border-radius:14px;padding:15px 60px 15px 18px;color:white;font-size:22px;font-family:'Fredoka One',cursive;font-weight:400;outline:none;transition:.3s;letter-spacing:1px;}
+.retiro-input-wrap input:focus{border-color:var(--green);box-shadow:0 0 16px rgba(75,245,66,0.18);}
+.retiro-input-wrap input::placeholder{color:#2a4a2e;font-size:18px;}
+.currency-tag{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-family:'Fredoka One',cursive;font-size:12px;color:var(--green);background:rgba(75,245,66,0.12);border:1px solid rgba(75,245,66,0.2);border-radius:8px;padding:3px 9px;}
+.retiro-quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;}
+.rq-btn{border:1px solid rgba(75,245,66,0.12);border-radius:11px;padding:9px 6px;font-size:12px;font-weight:800;cursor:pointer;color:#7aaa7e;background:rgba(10,20,12,0.8);transition:.2s;font-family:'Nunito',sans-serif;outline:none;}
+.rq-btn:hover{background:rgba(75,245,66,0.12);color:var(--green);border-color:rgba(75,245,66,0.3);}
+.retiro-fee-box{background:rgba(0,0,0,0.35);border-radius:12px;padding:11px 14px;margin-bottom:14px;display:none;flex-direction:column;gap:0;}
+.retiro-fee-box.visible{display:flex;}
+.fee-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.fee-row:last-child{border-bottom:none;}
+.fee-row .fl{font-size:12px;color:var(--text-muted);font-weight:700;}
+.fee-row .fv{font-family:'Fredoka One',cursive;font-size:14px;font-weight:400;}
+.fee-row .fv.neg{color:#ff5555;}
+.fee-row .fv.pos{color:var(--green);}
+.fee-row .fv.white{color:white;}
+.btn-retiro-confirm{width:100%;padding:14px;border:1px solid rgba(75,245,66,0.15);border-radius:14px;font-family:'Fredoka One',cursive;font-size:17px;letter-spacing:1px;cursor:not-allowed;transition:.3s;outline:none;user-select:none;background:rgba(75,245,66,0.05);color:#3a5a3e;}
+.btn-retiro-confirm.activo{background:linear-gradient(135deg,var(--green),#28c023);border-color:transparent;color:#030a05;cursor:pointer;box-shadow:0 8px 24px rgba(75,245,66,0.28);}
+.btn-retiro-confirm.activo:hover{transform:scale(1.02);}
+.retiro-info-row{display:flex;justify-content:center;gap:16px;margin-top:10px;}
+.retiro-info-chip{font-size:10px;color:var(--text-muted);font-weight:700;display:flex;align-items:center;gap:4px;}
+#retiroPopup{position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(8px);display:none;justify-content:center;align-items:center;z-index:8000;padding:20px;}
+#retiroPopup.open{display:flex;}
+.rcp-box{width:100%;max-width:320px;background:linear-gradient(180deg,#0f2014,#060e08);border:1px solid rgba(75,245,66,0.25);border-radius:24px;padding:26px 20px;text-align:center;animation:slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);position:relative;overflow:hidden;}
+.money-container{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.bill{position:absolute;font-size:22px;opacity:0;bottom:50%;left:50%;}
+@keyframes jump{0%{transform:translate(-50%,0) rotate(0deg);opacity:0;}20%{opacity:1;}100%{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0;}}
+.rcp-emoji{font-size:48px;margin-bottom:6px;display:block;animation:bounce 1.4s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+.rcp-title{font-family:'Fredoka One',cursive;font-size:19px;color:white;margin-bottom:16px;font-weight:400;}
+.rcp-summary{background:rgba(0,0,0,0.4);border-radius:14px;padding:14px;margin-bottom:14px;border:1px solid rgba(75,245,66,0.1);text-align:left;}
+.rcp-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;}
+.rcp-row:last-child{border-bottom:none;}
+.rcp-row .rl{color:var(--text-muted);font-weight:700;}
+.rcp-row .rv{font-family:'Fredoka One',cursive;font-weight:400;}
+.rcp-row .rv.red{color:#ff5555;}
+.rcp-row .rv.white{color:white;}
+.rcp-receive{background:rgba(75,245,66,0.08);border:1px solid rgba(75,245,66,0.2);border-radius:14px;padding:14px;margin-bottom:18px;text-align:center;}
+.rcp-receive .lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);display:block;margin-bottom:4px;}
+.rcp-receive .amt{font-family:'Fredoka One',cursive;font-size:34px;color:var(--green);display:block;text-shadow:0 0 20px rgba(75,245,66,0.4);}
+.rcp-actions{display:flex;gap:10px;}
+.rcp-cancel{flex:1;padding:12px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;background:rgba(255,255,255,0.04);color:var(--text-muted);font-family:'Fredoka One',cursive;font-size:14px;cursor:pointer;font-weight:400;outline:none;transition:.2s;}
+.rcp-cancel:hover{color:white;}
+.rcp-ok{flex:1.6;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--green),#28c023);color:#030a05;font-family:'Fredoka One',cursive;font-size:15px;cursor:pointer;font-weight:400;outline:none;box-shadow:0 6px 18px rgba(75,245,66,0.3);transition:.2s;}
+.rcp-ok:hover{transform:scale(1.03);}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen"><span class="loading-frog">🐸</span><div class="loading-text">CONECTANDO...</div></div>
+
+<div id="loginScreen">
+  <span class="login-frog">🐸</span>
+  <div class="login-title">SAPOMAYA INC</div>
+  <div class="login-sub">el salto que tu dinero necesita</div>
+  <div class="login-card">
+    <div class="login-tabs">
+      <button class="ltab active" onclick="switchLoginTab('login',this)">Iniciar sesión</button>
+      <button class="ltab" onclick="switchLoginTab('register',this)">Registrarse</button>
+    </div>
+    <div id="tabLogin">
+      <div class="input-group"><label>Correo electrónico</label><input type="email" id="loginEmail" placeholder="tu@correo.com"></div>
+      <div class="input-group"><label>Contraseña</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">🐸 ENTRAR</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+    <div id="tabRegister" style="display:none">
+      <div class="input-group"><label>Nombre de usuario</label><input type="text" id="regName" placeholder="MayaInversor123"></div>
+      <div class="input-group"><label>Correo electrónico</label><input type="email" id="regEmail" placeholder="tu@correo.com"></div>
+      <div class="input-group"><label>Contraseña</label><input type="password" id="regPass" placeholder="Mínimo 6 caracteres"></div>
+      <div class="input-group"><label>Código de invitación (opcional)</label><input type="text" id="regRef" placeholder="REF-XXXX"></div>
+      <button class="btn-login" id="btnRegister" onclick="doRegister()">⚡ CREAR CUENTA</button>
+      <div class="login-error" id="regError"></div>
+    </div>
+  </div>
+</div>
+
+<div id="coinBar">💰 $<span id="coinAmount">0.00</span></div>
+<div class="main-wrapper" id="mainWrapper" style="display:none">
+
+  <div id="pgInicio" class="page-content active">
+    <div class="hero">
+      <span class="hero-frog">🐸</span>
+      <div class="hero-name">SAPOMAYA INC</div>
+      <div class="hero-slogan">el salto que tu dinero necesita</div>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-banner">
+        <span class="plan-icon">🐸</span>
+        <div class="plan-label">SMILISCA BAUDINII</div>
+        <div class="plan-sub" style="color:#a0c8a4;">Rana Arborícola Mexicana · Endémica</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-stats">
+          <div class="plan-stat"><span class="plan-stat-val">4.00%</span><span class="plan-stat-label">Tasa</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">60d</span><span class="plan-stat-label">Ciclo</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$100</span><span class="plan-stat-label">Precio</span></div>
+        </div>
+        <div class="plan-stats-2">
+          <div class="plan-stat"><span class="plan-stat-val">$4.00/d</span><span class="plan-stat-label">Rend. diario</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$340.00</span><span class="plan-stat-label">Rend. total</span></div>
+        </div>
+        <button class="btn-invest" onclick="openModalInvertir(0)">⚡ INVERTIR MX$100.00</button>
+      </div>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-banner">
+        <span class="plan-icon">🐸</span>
+        <div class="plan-label">AGALYCHNIS MORELETII</div>
+        <div class="plan-sub" style="color:#a0c8a4;">Rana de Ojos Negros · Endémica</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-stats">
+          <div class="plan-stat"><span class="plan-stat-val">2.50%</span><span class="plan-stat-label">Tasa</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">180d</span><span class="plan-stat-label">Ciclo</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$300</span><span class="plan-stat-label">Precio</span></div>
+        </div>
+        <div class="plan-stats-2">
+          <div class="plan-stat"><span class="plan-stat-val">$7.50/d</span><span class="plan-stat-label">Rend. diario</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$1,650.00</span><span class="plan-stat-label">Rend. total</span></div>
+        </div>
+        <button class="btn-invest" onclick="openModalInvertir(1)">⚡ INVERTIR MX$300.00</button>
+      </div>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;min-height:180px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Triprion_spatulatus.jpg/640px-Triprion_spatulatus.jpg" alt="Triprion spatulatus" style="width:100%;height:180px;object-fit:cover;opacity:0.55;display:block;" onerror="this.style.display='none'">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,10,5,0.2) 0%,rgba(3,10,5,0.88) 60%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 20px 20px;">
+          <span class="plan-icon" style="margin-bottom:4px;font-size:36px;">🐸</span>
+          <div class="plan-label">TRIPRION SPATULATUS</div>
+          <div class="plan-sub" style="color:#a0c8a4;">Rana Pico de Pato · Endémica</div>
+        </div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-stats">
+          <div class="plan-stat"><span class="plan-stat-val">3.00%</span><span class="plan-stat-label">Tasa</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">180d</span><span class="plan-stat-label">Ciclo</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$400</span><span class="plan-stat-label">Precio</span></div>
+        </div>
+        <div class="plan-stats-2">
+          <div class="plan-stat"><span class="plan-stat-val">$12.00/d</span><span class="plan-stat-label">Rend. diario</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$2,560.00</span><span class="plan-stat-label">Rend. total</span></div>
+        </div>
+        <button class="btn-invest" onclick="openModalInvertir(2)">⚡ INVERTIR MX$400.00</button>
+      </div>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;min-height:180px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Lithobates_megapoda.jpg/640px-Lithobates_megapoda.jpg" alt="Lithobates megapoda" style="width:100%;height:180px;object-fit:cover;opacity:0.55;display:block;" onerror="this.style.display='none'">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,10,5,0.2) 0%,rgba(3,10,5,0.88) 60%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 20px 20px;">
+          <span class="plan-icon" style="margin-bottom:4px;font-size:36px;">🐸</span>
+          <div class="plan-label">LITHOBATES MEGAPODA</div>
+          <div class="plan-sub" style="color:#a0c8a4;">Rana Patona · Endémica</div>
+        </div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-stats">
+          <div class="plan-stat"><span class="plan-stat-val">2.60%</span><span class="plan-stat-label">Tasa</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">180d</span><span class="plan-stat-label">Ciclo</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$1,200</span><span class="plan-stat-label">Precio</span></div>
+        </div>
+        <div class="plan-stats-2">
+          <div class="plan-stat"><span class="plan-stat-val">$31.20/d</span><span class="plan-stat-label">Rend. diario</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$6,816.00</span><span class="plan-stat-label">Rend. total</span></div>
+        </div>
+        <button class="btn-invest" onclick="openModalInvertir(3)">⚡ INVERTIR MX$1,200.00</button>
+      </div>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;min-height:180px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Charadrahyla_trux.jpg/640px-Charadrahyla_trux.jpg" alt="Charadrahyla trux" style="width:100%;height:180px;object-fit:cover;opacity:0.55;display:block;" onerror="this.style.display='none'">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,10,5,0.2) 0%,rgba(3,10,5,0.88) 60%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 20px 20px;">
+          <span class="plan-icon" style="margin-bottom:4px;font-size:36px;">🐸</span>
+          <div class="plan-label">CHARADRAHYLA TRUX</div>
+          <div class="plan-sub" style="color:#a0c8a4;">Rana de Árbol de Espolón · Endémica</div>
+        </div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-stats">
+          <div class="plan-stat"><span class="plan-stat-val">2.70%</span><span class="plan-stat-label">Tasa</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">210d</span><span class="plan-stat-label">Ciclo</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$3,000</span><span class="plan-stat-label">Precio</span></div>
+        </div>
+        <div class="plan-stats-2">
+          <div class="plan-stat"><span class="plan-stat-val">$81.00/d</span><span class="plan-stat-label">Rend. diario</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$20,010.00</span><span class="plan-stat-label">Rend. total</span></div>
+        </div>
+        <button class="btn-invest" onclick="openModalInvertir(4)">⚡ INVERTIR MX$3,000.00</button>
+      </div>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;min-height:180px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Pachymedusa_dacnicolor.jpg/640px-Pachymedusa_dacnicolor.jpg" alt="Pachymedusa dacnicolor" style="width:100%;height:180px;object-fit:cover;opacity:0.55;display:block;" onerror="this.style.display='none'">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,10,5,0.2) 0%,rgba(3,10,5,0.88) 60%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 20px 20px;">
+          <span class="plan-icon" style="margin-bottom:4px;font-size:36px;">🐸</span>
+          <div class="plan-label">PACHYMEDUSA DACNICOLOR</div>
+          <div class="plan-sub" style="color:#a0c8a4;">Rana Verde Gigante · Endémica</div>
+        </div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-stats">
+          <div class="plan-stat"><span class="plan-stat-val">2.80%</span><span class="plan-stat-label">Tasa</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">360d</span><span class="plan-stat-label">Ciclo</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$5,000</span><span class="plan-stat-label">Precio</span></div>
+        </div>
+        <div class="plan-stats-2">
+          <div class="plan-stat"><span class="plan-stat-val">$140.00/d</span><span class="plan-stat-label">Rend. diario</span></div>
+          <div class="plan-stat"><span class="plan-stat-val">$55,400.00</span><span class="plan-stat-label">Rend. total</span></div>
+        </div>
+        <button class="btn-invest" onclick="openModalInvertir(5)">⚡ INVERTIR MX$5,000.00</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pgMineria" class="page-content">
+    <div class="section-title">⛏ Minería</div>
+    <div class="mining-stats">
+      <div class="m-box"><span>Acumulado</span><b id="totalAcum">$0.00</b></div>
+      <div class="m-box"><span>Planes activos</span><b id="planesCount">0</b></div>
+    </div>
+    <div id="lista-planes"></div>
+  </div>
+
+  <div id="pgEquipo" class="page-content">
+    <div class="section-title">👑 Equipo</div>
+    <div class="eq-stats-grid">
+      <div class="eq-stat-item">Miembros<b id="eqMiembros">0</b></div>
+      <div class="eq-stat-item">Inv. equipo<b id="eqInversion">$0.00</b></div>
+      <div class="eq-stat-item">Comisión<b id="eqComision">$0.00</b></div>
+    </div>
+    <div class="current-vip-status">
+      <span class="status-label">Tu nivel actual:</span>
+      <span class="status-rank" id="vipStatus">Nivel VIP 0</span>
+    </div>
+    <div class="vip-container" id="vipCarousel">
+      <div class="vip-track" id="vipTrack">
+        <div class="vip-card-item active"><div class="vip-card-header"><h2>VIP1</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 3 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP1.</div><div class="vip-card-price">MX$50.00</div></div>
+        <div class="vip-card-item"><div class="vip-card-header"><h2>VIP2</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 6 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP2.</div><div class="vip-card-price">MX$100.00</div></div>
+        <div class="vip-card-item"><div class="vip-card-header"><h2>VIP3</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 9 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP3.</div><div class="vip-card-price">MX$150.00</div></div>
+        <div class="vip-card-item"><div class="vip-card-header"><h2>VIP4</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 12 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP4.</div><div class="vip-card-price">MX$200.00</div></div>
+        <div class="vip-card-item"><div class="vip-card-header"><h2>VIP5</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 15 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP5.</div><div class="vip-card-price">MX$300.00</div></div>
+        <div class="vip-card-item"><div class="vip-card-header"><h2>VIP6</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 18 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP6.</div><div class="vip-card-price">MX$400.00</div></div>
+        <div class="vip-card-item"><div class="vip-card-header"><h2>VIP7</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 21 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP7.</div><div class="vip-card-price">MX$500.00</div></div>
+        <div class="vip-card-item"><div class="vip-card-header"><h2>VIP8</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 25 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP8.</div><div class="vip-card-price">MX$600.00</div></div>
+        <div class="vip-card-item"><div class="vip-card-header"><h2>VIP9</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 30 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP9.</div><div class="vip-card-price">MX$800.00</div></div>
+        <div class="vip-card-item"><div class="vip-card-header"><h2>VIP10</h2><button class="vip-share-btn">Compartir</button></div><div class="vip-card-desc">Invita a 40 nuevos miembros y haz que cada uno complete un alquiler individual de al menos MX$300.00 para ascender al nivel VIP10.</div><div class="vip-card-price">MX$1,000.00</div></div>
+      </div>
+    </div>
+    <div class="comision-card">
+      <h4>🤝 Comisiones por Invitación</h4>
+      <div class="comision-levels">
+        <div class="comision-level"><span>Nivel 1 — Tus invitados directos</span><b>10%</b></div>
+        <div class="comision-level"><span>Nivel 2 — Invitados de tus invitados</span><b>5%</b></div>
+        <div class="comision-level"><span>Nivel 3 — Tercer nivel</span><b>2%</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pgGanancias" class="page-content">
+    <div class="section-title">📊 Historial</div>
+    <div class="filter-tabs">
+      <button class="ftab active" onclick="filtrarHist('todo',this)">📋 Todo</button>
+      <button class="ftab" onclick="filtrarHist('ganancia',this)">📈 Ganancias</button>
+      <button class="ftab" onclick="filtrarHist('recarga',this)">➕ Recargas</button>
+      <button class="ftab" onclick="filtrarHist('retiro',this)">💸 Retiros</button>
+    </div>
+    <div id="historial-box"></div>
+  </div>
+
+  <div id="pgCuenta" class="page-content">
+    <div class="profile-head">
+      <i class="fas fa-user-circle" style="font-size:56px;color:var(--green);filter:drop-shadow(0 0 12px rgba(75,245,66,0.3))"></i>
+      <h4 id="userNameDisplay">Usuario_Maya</h4>
+      <span class="vip-badge" id="userVip">VIP 0</span>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:10px;color:var(--text-muted);font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Tu código de invitación</div>
+      <div class="ref-box">
+        <span class="ref-code" id="refCode">REF-????</span>
+        <button class="ref-copy" onclick="copiarRef()">📋 COPIAR</button>
+      </div>
+    </div>
+    <div class="menu-list">
+      <div class="menu-item" onclick="openModalRecargar()"><i class="fas fa-hand-holding-usd"></i> Recargar saldo <span style="margin-left:auto;">›</span></div>
+      <div class="menu-item" onclick="openModalRetirar()"><i class="fas fa-wallet"></i> Retirar <span style="margin-left:auto;">›</span></div>
+      <div class="menu-item"><i class="fas fa-university"></i> Vincular cuenta bancaria <span style="margin-left:auto;">›</span></div>
+      <div class="menu-item"><i class="fas fa-headset"></i> Contacto <span style="margin-left:auto;">›</span></div>
+      <div class="menu-item" onclick="showSubPage('pgSobre')"><i class="fas fa-info-circle"></i> Sobre nosotros <span style="margin-left:auto;">›</span></div>
+      <div class="menu-item danger" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión <span style="margin-left:auto;">›</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="pgSobre" class="sub-page">
+  <div class="sub-page-header">
+    <button class="sub-back-btn" onclick="hideSubPage('pgSobre')">←</button>
+    <span class="sub-page-title">Sobre nosotros</span>
+  </div>
+  <div class="sobre-container">
+    <h1 class="sobre-h1">SAPOMAYA INC</h1>
+    <p class="sobre-p">SAPOMAYA INC es una compañía enfocada en el desarrollo de tecnologías avanzadas de inteligencia artificial, automatización digital y ecosistemas financieros impulsados por innovación.</p>
+    <p class="sobre-p">Nuestra visión es construir una infraestructura tecnológica global capaz de transformar la manera en que las personas interactúan con las inversiones, la automatización y las plataformas digitales del futuro.</p>
+    <p class="sobre-p">Combinamos desarrollo estratégico, inteligencia artificial y expansión tecnológica para crear proyectos escalables con alto potencial de crecimiento a corto, mediano y largo plazo.</p>
+    <p class="sobre-p">En SAPOMAYA INC creemos que la nueva economía digital será liderada por empresas capaces de integrar innovación, velocidad y visión empresarial en un solo ecosistema.</p>
+    <p class="sobre-p">Actualmente trabajamos en el crecimiento de nuestra red tecnológica y en la búsqueda de inversores estratégicos interesados en formar parte de una nueva generación de proyectos impulsados por IA.</p>
+    <h2 class="sobre-h2">Nuestra misión</h2>
+    <p class="sobre-p">Desarrollar tecnología inteligente que genere oportunidades reales de crecimiento digital y financiero.</p>
+    <h2 class="sobre-h2">Nuestra visión</h2>
+    <p class="sobre-p">Convertirnos en una referencia internacional en innovación tecnológica y sistemas basados en inteligencia artificial.</p>
+    <h2 class="sobre-h2">Valores</h2>
+    <ul class="sobre-ul"><li>Innovación constante</li><li>Expansión global</li><li>Tecnología de alto nivel</li><li>Desarrollo estratégico</li><li>Visión a futuro</li></ul>
+  </div>
+</div>
+
+<nav id="bottomNav">
+  <a href="#" onclick="showPage('pgInicio',this)" class="active"><span class="nav-emoji">🏠</span><span>Inicio</span></a>
+  <a href="#" onclick="showPage('pgMineria',this)"><span class="nav-emoji">⛏️</span><span>Minería</span></a>
+  <a href="#" onclick="showPage('pgEquipo',this)"><span class="nav-emoji">👑</span><span>Equipo</span></a>
+  <a href="#" onclick="showPage('pgGanancias',this)"><span class="nav-emoji">📊</span><span>Ganancias</span></a>
+  <a href="#" onclick="showPage('pgCuenta',this)"><span class="nav-emoji">👤</span><span>Cuenta</span></a>
+</nav>
+
+<!-- MODAL INVERTIR -->
+<div class="modal-overlay" id="modalInvertir">
+  <div class="modal-box">
+    <div class="modal-title">⚡ Confirmar inversión</div>
+    <div id="pkgInfoModal" style="font-size:13px;color:var(--text-muted);margin-bottom:16px;background:rgba(75,245,66,0.05);border:1px solid rgba(75,245,66,0.12);border-radius:12px;padding:12px 14px;"></div>
+    <p style="font-size:12px;color:#5a7a5e;">Saldo disponible: <b style="color:white" id="saldoDisponibleModal">$0.00</b></p>
+    <button class="modal-btn" id="btnConfInv" onclick="confirmarInversion()">⚡ CONFIRMAR INVERSIÓN</button>
+    <button class="modal-btn-cancel" onclick="closeModal('modalInvertir')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL RECARGAR -->
+<div class="modal-overlay" id="modalRecargar">
+  <div class="modal-box">
+    <div id="recargaStep1">
+      <div class="recarga-logo">💸</div>
+      <div class="recarga-titulo">Recargar saldo</div>
+      <div class="recarga-sub">¿Cuánto quieres depositar?</div>
+      <div class="recarga-input-box">
+        <input type="number" id="montoRecarga" placeholder="Cantidad a recargar">
+        <span>MXN</span>
+      </div>
+      <div class="montos-grid">
+        <button class="monto-btn" onclick="setMonto(100)">$100</button>
+        <button class="monto-btn" onclick="setMonto(300)">$300</button>
+        <button class="monto-btn" onclick="setMonto(500)">$500</button>
+        <button class="monto-btn" onclick="setMonto(1000)">$1,000</button>
+        <button class="monto-btn" onclick="setMonto(2000)">$2,000</button>
+        <button class="monto-btn" onclick="setMonto(5000)">$5,000</button>
+      </div>
+      <button class="btn-recarga-next" onclick="irADatosBancarios()">SIGUIENTE →</button>
+      <button class="modal-btn-cancel" onclick="closeModal('modalRecargar')">Cancelar</button>
+    </div>
+    <div id="recargaStep2">
+      <button class="recarga-back-btn" onclick="volverAMonto()">← Regresar</button>
+      <div class="monto-resumen">
+        <div class="label">Monto a depositar</div>
+        <div class="valor" id="montoDisplay">$0 <span>MXN</span></div>
+      </div>
+      <div class="banco-card">
+        <div class="banco-card-title">📋 Datos para transferencia</div>
+        <div class="banco-row"><span class="bl">Banco</span><span class="bv">STP</span></div>
+        <div class="banco-row"><span class="bl">Titular</span><span class="bv">SAPOMAYA INC</span></div>
+        <div class="banco-row"><span class="bl">CLABE</span><span class="bv">646180401628958912 <button class="copy-btn" onclick="copiarCLABE()">COPIAR</button></span></div>
+      </div>
+      <div class="banco-alerta">⚠️ Realiza la transferencia exacta de <span id="montoAlerta">$0</span> MXN. Después sube tu comprobante en el siguiente paso.</div>
+      <button class="btn-recarga-next" onclick="irASubirComprobante()">YA TRANSFERÍ →</button>
+      <button class="modal-btn-cancel" onclick="closeModal('modalRecargar')">Cancelar</button>
+    </div>
+    <div id="recargaStep3">
+      <button class="recarga-back-btn" onclick="volverADatos()">← Regresar</button>
+      <div class="monto-resumen">
+        <div class="label">Monto enviado</div>
+        <div class="valor" id="montoDisplay3">$0 <span>MXN</span></div>
+      </div>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="comprobanteInput" accept="image/*" onchange="previsualizarComprobante(this)">
+        <span class="upload-icon">📸</span>
+        <div class="upload-text">Sube tu comprobante</div>
+        <div class="upload-sub">Toca aquí para seleccionar la foto</div>
+        <img id="uploadPreview" class="upload-preview" src="" alt="Comprobante">
+      </div>
+      <button class="btn-enviar-comp" id="btnEnviarComp" onclick="enviarSolicitudRecarga()">📤 ENVIAR COMPROBANTE</button>
+      <button class="modal-btn-cancel" onclick="closeModal('modalRecargar')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RETIRAR -->
+<div class="modal-overlay" id="modalRetirar">
+  <div class="modal-box">
+    <div class="retiro-card">
+      <div class="retiro-header">
+        <div class="retiro-icon-wrap">💸</div>
+        <div class="retiro-header-text">
+          <h3>Retirar fondos</h3>
+          <p>Procesamiento 1 a 24 horas</p>
+        </div>
+      </div>
+      <div class="retiro-saldo-box">
+        <span class="rs-label">Saldo disponible</span>
+        <span class="rs-valor" id="saldoRetirarModal">$0.00</span>
+      </div>
+      <div class="retiro-input-wrap">
+        <input type="number" id="montoRetiro" placeholder="0.00" min="10" oninput="onRetiroInput()">
+        <span class="currency-tag">MXN</span>
+      </div>
+      <div class="retiro-quick-grid">
+        <button class="rq-btn" onclick="setRetiroMonto(50)">$50</button>
+        <button class="rq-btn" onclick="setRetiroMonto(100)">$100</button>
+        <button class="rq-btn" onclick="setRetiroMonto(200)">$200</button>
+        <button class="rq-btn" onclick="setRetiroMonto(500)">$500</button>
+        <button class="rq-btn" onclick="setRetiroMonto(1000)">$1,000</button>
+        <button class="rq-btn" onclick="setRetiroMax()">MAX</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+        <div style="position:relative;">
+          <input type="text" id="retiroNombre" placeholder="Nombre del titular" oninput="onRetiroInput()" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(75,245,66,0.18);border-radius:12px;padding:12px 14px;color:white;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;outline:none;">
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;">👤</span>
+        </div>
+        <div style="position:relative;">
+          <input type="text" id="retiroCuenta" placeholder="Número de cuenta / CLABE" oninput="onRetiroInput()" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(75,245,66,0.18);border-radius:12px;padding:12px 14px;color:white;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600;outline:none;">
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;">🏦</span>
+        </div>
+      </div>
+      <div class="retiro-fee-box" id="retiroFeeBox">
+        <div class="fee-row"><span class="fl">Monto solicitado</span><span class="fv white" id="feeMonto">$0.00</span></div>
+        <div class="fee-row"><span class="fl">Comisión (10%)</span><span class="fv neg" id="feeComision">-$0.00</span></div>
+        <div class="fee-row"><span class="fl">Recibirás</span><span class="fv pos" id="feeRecibe">$0.00</span></div>
+      </div>
+      <button class="btn-retiro-confirm" id="btnRetiroConfirm" disabled onclick="abrirPopupRetiro()">💸 RETIRAR AHORA</button>
+      <div class="retiro-info-row">
+        <span class="retiro-info-chip">💸 Comisión 10%</span>
+        <span class="retiro-info-chip">⏱ 1–24 horas</span>
+        <span class="retiro-info-chip">🔒 Seguro</span>
+      </div>
+      <button class="modal-btn-cancel" style="margin-top:12px;" onclick="closeModal('modalRetirar')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP CONFIRMACIÓN RETIRO -->
+<div id="retiroPopup">
+  <div class="rcp-box">
+    <div class="money-container" id="moneyContainer"></div>
+    <span class="rcp-emoji">💸</span>
+    <div class="rcp-title">Confirmar Retiro</div>
+    <div class="rcp-summary">
+      <div class="rcp-row"><span class="rl">Monto</span><span class="rv white" id="rcpMonto">$0.00</span></div>
+      <div class="rcp-row"><span class="rl">Comisión (10%)</span><span class="rv red" id="rcpComision">-$0.00</span></div>
+    </div>
+    <div class="rcp-receive">
+      <span class="lbl">RECIBIRÁS</span>
+      <span class="amt" id="rcpRecibe">$0.00</span>
+    </div>
+    <div class="rcp-actions">
+      <button class="rcp-cancel" onclick="cerrarPopupRetiro()">Cancelar</button>
+      <button class="rcp-ok" onclick="confirmarRetiro()">✅ CONFIRMAR</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyAv7_CG2OUGKaZyn7Ngt_-WcuawJn2ZLHs",
+  authDomain:"sapom-99355.firebaseapp.com",
+  projectId:"sapom-99355",
+  storageBucket:"sapom-99355.firebasestorage.app",
+  messagingSenderId:"216280838257",
+  appId:"1:216280838257:web:af019bceff1fc37398abd0"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ── Bots separados ──────────────────────────────────────────────
+const TOKEN_RETIROS  = '8668269684:AAHES_9m1QGAXEkAg8KR1TfTLKwgKMiien0';
+const TOKEN_RECARGAS = '8674509022:AAG7WO6PUThf6ddFpZiXQW4sHOL3QQRkMBs';
+const CHAT_ID        = '6837082259';
+
+const COMISION_PORCENTAJES = [0.10, 0.05, 0.02];
+const COMISION_NIVELES     = ['1',  '2',  '3' ];
+
+const PAQUETES = [
+  { nombre:'SMILISCA BAUDINII',       precio:100,  tasa:4.00, diario:4.00,   total:340.00,   ciclo:60,  limite:1, icono:'🐸', sub:'Rana Arborícola Mexicana' },
+  { nombre:'AGALYCHNIS MORELETII',    precio:300,  tasa:2.50, diario:7.50,   total:1650.00,  ciclo:180, limite:3, icono:'🐸', sub:'Rana de Ojos Negros' },
+  { nombre:'TRIPRION SPATULATUS',     precio:400,  tasa:3.00, diario:12.00,  total:2560.00,  ciclo:180, limite:3, icono:'🐸', sub:'Rana Pico de Pato' },
+  { nombre:'LITHOBATES MEGAPODA',     precio:1200, tasa:2.60, diario:31.20,  total:6816.00,  ciclo:180, limite:3, icono:'🐸', sub:'Rana Patona' },
+  { nombre:'CHARADRAHYLA TRUX',       precio:3000, tasa:2.70, diario:81.00,  total:20010.00, ciclo:210, limite:3, icono:'🐸', sub:'Rana de Árbol de Espolón' },
+  { nombre:'PACHYMEDUSA DACNICOLOR',  precio:5000, tasa:2.80, diario:140.00, total:55400.00, ciclo:360, limite:3, icono:'🐸', sub:'Rana Verde Gigante' },
+];
+
+let currentUser=null, userData=null, planesData=[];
+let comprobanteFile=null;
+let selectedPkgIndex=0;
+
+onAuthStateChanged(auth, async (user)=>{
+  document.getElementById('loadingScreen').style.display='none';
+  if(user){currentUser=user; await cargarUsuario(); entrarApp();}
+  else{currentUser=null; userData=null; mostrarLogin();}
+});
+
+function userRef(){return doc(db,'usuarios',currentUser.uid);}
+function planesRef(){return collection(db,'usuarios',currentUser.uid,'paquetes');}
+function histRef(){return collection(db,'usuarios',currentUser.uid,'historial');}
+
+async function cargarUsuario(){
+  const snap=await getDoc(userRef());
+  if(snap.exists()) userData=snap.data();
+  const qSnap=await getDocs(query(planesRef(),orderBy('start','desc')));
+  planesData=[];
+  qSnap.forEach(d=>planesData.push({id:d.id,...d.data()}));
+}
+
+function suscribirSaldo(){
+  onSnapshot(userRef(),(snap)=>{
+    if(snap.exists()){userData=snap.data(); document.getElementById('coinAmount').innerText=(userData.saldo||0).toFixed(2);}
+  });
+}
+
+window.switchLoginTab=function(tab,btn){
+  document.querySelectorAll('.ltab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tabLogin').style.display=tab==='login'?'':'none';
+  document.getElementById('tabRegister').style.display=tab==='register'?'':'none';
+};
+
+window.doLogin=async function(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  const err=document.getElementById('loginError');
+  const btn=document.getElementById('btnLogin');
+  err.textContent='';
+  if(!email||!pass){err.textContent='Completa todos los campos';return;}
+  btn.disabled=true; btn.textContent='Entrando...';
+  try{await signInWithEmailAndPassword(auth,email,pass);}
+  catch(e){err.textContent=traducirError(e.code);btn.disabled=false;btn.textContent='🐸 ENTRAR';}
+};
+
+window.doRegister=async function(){
+  const nombre=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  const ref=document.getElementById('regRef').value.trim().toUpperCase();
+  const err=document.getElementById('regError');
+  const btn=document.getElementById('btnRegister');
+  err.textContent='';
+  if(!nombre||!email||!pass){err.textContent='Completa todos los campos';return;}
+  if(pass.length<6){err.textContent='La contraseña debe tener al menos 6 caracteres';return;}
+  btn.disabled=true; btn.textContent='Creando cuenta...';
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    const uid=cred.user.uid;
+    const codigo='REF-'+Math.random().toString(36).substr(2,4).toUpperCase();
+    await setDoc(doc(db,'usuarios',uid),{nombre,email,saldo:0,vip:0,codigo,refUsado:ref||null,creadoEn:serverTimestamp()});
+    if(ref) await registrarReferido(uid,nombre,ref);
+  }catch(e){err.textContent=traducirError(e.code);btn.disabled=false;btn.textContent='⚡ CREAR CUENTA';}
+};
+
+async function registrarReferido(nuevoUid,nuevoNombre,codigoRef){
+  try{
+    const snap=await getDocs(query(collection(db,'usuarios'),where('codigo','==',codigoRef)));
+    if(!snap.empty) await addDoc(collection(db,'usuarios',snap.docs[0].id,'referidos'),{uid:nuevoUid,nombre:nuevoNombre,nivel:'1',fecha:serverTimestamp()});
+  }catch(e){console.warn('Ref error:',e);}
+}
+
+window.cerrarSesion=async function(){await signOut(auth);};
+
+function mostrarLogin(){
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('coinBar').style.display='none';
+  document.getElementById('mainWrapper').style.display='none';
+  document.getElementById('bottomNav').classList.remove('visible');
+  document.getElementById('btnLogin').disabled=false; document.getElementById('btnLogin').textContent='🐸 ENTRAR';
+  document.getElementById('btnRegister').disabled=false; document.getElementById('btnRegister').textContent='⚡ CREAR CUENTA';
+}
+
+function entrarApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('coinBar').style.display='flex';
+  document.getElementById('mainWrapper').style.display='block';
+  document.getElementById('bottomNav').classList.add('visible');
+  suscribirSaldo(); actualizarUI(); iniciarTimers(); initCarousel();
+}
+
+window.showPage=function(id,el){
+  event.preventDefault();
+  document.querySelectorAll('.page-content').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#bottomNav a').forEach(a=>a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  if(id==='pgMineria') renderMineria();
+  if(id==='pgGanancias') renderHistorial('todo');
+  if(id==='pgEquipo') renderEquipo();
+  if(id==='pgCuenta') renderCuenta();
+};
+
+function actualizarUI(){
+  if(!userData) return;
+  document.getElementById('coinAmount').innerText=(userData.saldo||0).toFixed(2);
+  const lvl=planesData.length>=5?3:planesData.length>=3?2:planesData.length>=1?1:0;
+  document.getElementById('vipStatus').innerText='Nivel VIP '+lvl;
+  document.getElementById('userVip').innerText='VIP '+lvl;
+  document.getElementById('userNameDisplay').innerText=userData.nombre||'Usuario_Maya';
+  document.getElementById('refCode').innerText=userData.codigo||'REF-????';
+  if((userData.vip||0)!==lvl) updateDoc(userRef(),{vip:lvl}).catch(()=>{});
+}
+
+const DIA_MS = 86400000;
+
+function formatTimer(ms){
+  if(ms<=0) return '⏳ Acreditando...';
+  const totalSec=Math.floor(ms/1000);
+  const h=Math.floor(totalSec/3600);
+  const m=Math.floor((totalSec%3600)/60);
+  const s=totalSec%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function infoCicloDiario(p){
+  const pkg=PAQUETES[p.pkgIndex]||PAQUETES[0];
+  const now=Date.now();
+  const elapsed=now-p.start;
+  const diasTotales=pkg.ciclo;
+  const diasPasados=Math.floor(elapsed/DIA_MS);
+  const msEnDiaActual=elapsed % DIA_MS;
+  const msRestanteHoy=DIA_MS - msEnDiaActual;
+  const pctDia=(msEnDiaActual/DIA_MS)*100;
+  const completado=diasPasados>=diasTotales;
+  return {pkg, diasPasados, diasTotales, msRestanteHoy, pctDia, completado};
+}
+
+function renderMineria(){
+  const list=document.getElementById('lista-planes');
+  document.getElementById('planesCount').innerText=planesData.length;
+  let acum=0;
+  planesData.forEach(p=>{
+    const {pkg,diasPasados,diasTotales}=infoCicloDiario(p);
+    acum+=Math.min(diasPasados,diasTotales)*pkg.diario;
+  });
+  document.getElementById('totalAcum').innerText='$'+acum.toFixed(2);
+  if(!planesData.length){list.innerHTML="<p style='text-align:center;color:#3a5a3e;margin-top:30px;font-weight:700;'>No tienes mineros activos<br><span style='font-size:11px;'>Invierte desde la pantalla Inicio</span></p>";return;}
+  list.innerHTML=planesData.map(p=>{
+    const {pkg,diasPasados,diasTotales,msRestanteHoy,pctDia,completado}=infoCicloDiario(p);
+    const ganado=(Math.min(diasPasados,diasTotales)*pkg.diario).toFixed(2);
+    const timerText=completado?'✅ Completado':formatTimer(msRestanteHoy);
+    const pct=completado?100:pctDia.toFixed(1);
+    return `<div class="active-plan">
+      <div class="plan-thumb">${pkg.icono}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-size:11px;">
+          <b style="font-family:'Fredoka One',cursive;color:var(--green);font-weight:400;">${pkg.nombre}</b>
+          <span style="color:#5a7a5e;font-weight:700;" id="timer-${p.id}">${timerText}</span>
+        </div>
+        <div style="font-size:9px;color:var(--text-muted);margin:2px 0;">Día ${Math.min(diasPasados,diasTotales)}/${diasTotales}</div>
+        <div class="bar-bg"><div class="bar-fill" id="bar-${p.id}" style="width:${pct}%"></div></div>
+        <span class="earn-badge">+$${ganado} / $${pkg.total.toFixed(2)} total · +$${pkg.diario}/día</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function verificarYAcreditarGanancias(){
+  if(!currentUser||!planesData.length) return;
+  const now=Date.now();
+  for(const p of planesData){
+    const pkg=PAQUETES[p.pkgIndex]||PAQUETES[0];
+    const diasPasados=Math.floor((now-p.start)/DIA_MS);
+    const diasAcreditados=p.diasAcreditados||0;
+    const diasNuevos=Math.min(diasPasados,pkg.ciclo)-diasAcreditados;
+    if(diasNuevos<=0) continue;
+    const ganancia=parseFloat((diasNuevos*pkg.diario).toFixed(2));
+    try{
+      const snap=await getDoc(userRef());
+      if(!snap.exists()) continue;
+      const saldoActual=snap.data().saldo||0;
+      await updateDoc(userRef(),{saldo:parseFloat((saldoActual+ganancia).toFixed(2))});
+      await agregarHistorial('ganancia',ganancia,{paquete:pkg.nombre,dias:diasNuevos});
+      await updateDoc(doc(db,'usuarios',currentUser.uid,'paquetes',p.id),{diasAcreditados:diasAcreditados+diasNuevos});
+      p.diasAcreditados=diasAcreditados+diasNuevos;
+      userData.saldo=parseFloat((saldoActual+ganancia).toFixed(2));
+      showToast(`💰 +$${ganancia.toFixed(2)} acreditado de ${pkg.nombre}`);
+    }catch(e){console.error('Error acreditando ganancia:',e);}
+  }
+}
+
+function iniciarTimers(){
+  verificarYAcreditarGanancias();
+  setInterval(verificarYAcreditarGanancias, 60000);
+  setInterval(()=>{
+    planesData.forEach(p=>{
+      const {diasPasados,diasTotales,msRestanteHoy,pctDia,completado}=infoCicloDiario(p);
+      const bar=document.getElementById(`bar-${p.id}`);
+      const timer=document.getElementById(`timer-${p.id}`);
+      if(bar&&timer){
+        bar.style.width=(completado?100:pctDia.toFixed(1))+'%';
+        timer.innerText=completado?'✅ Completado':formatTimer(msRestanteHoy);
+      }
+    });
+    const pg=document.getElementById('pgMineria');
+    if(pg&&pg.classList.contains('active')){
+      let a=0;
+      planesData.forEach(p=>{
+        const {pkg,diasPasados,diasTotales}=infoCicloDiario(p);
+        a+=Math.min(diasPasados,diasTotales)*pkg.diario;
+      });
+      const el=document.getElementById('totalAcum');
+      if(el) el.innerText='$'+a.toFixed(2);
+    }
+  },1000);
+}
+
+async function renderEquipo(){
+  const snap = await getDocs(collection(db,'usuarios',currentUser.uid,'referidos'));
+  document.getElementById('eqMiembros').innerText = snap.size;
+  let totalInv = 0;
+  for (const refDoc of snap.docs) {
+    const refUid = refDoc.data().uid;
+    if (!refUid) continue;
+    try {
+      const refPlanesSnap = await getDocs(collection(db,'usuarios',refUid,'paquetes'));
+      refPlanesSnap.forEach(p => {
+        const pkg = PAQUETES[p.data().pkgIndex] || PAQUETES[0];
+        totalInv += pkg.precio;
+      });
+    } catch(e) { console.warn('Error leyendo planes de referido:', refUid, e); }
+  }
+  document.getElementById('eqInversion').innerText = '$' + totalInv.toFixed(2);
+  document.getElementById('eqComision').innerText = '$' + (userData?.totalComisiones || 0).toFixed(2);
+  actualizarUI();
+  updateCarousel();
+}
+
+let filtroActual='todo';
+window.filtrarHist=function(tipo,btn){
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); filtroActual=tipo; renderHistorial(tipo);
+};
+
+async function renderHistorial(tipo){
+  const box=document.getElementById('historial-box');
+  box.innerHTML="<p style='text-align:center;color:#3a5a3e;margin-top:20px;'>Cargando...</p>";
+  try{
+    const q=query(histRef(),orderBy('fecha','desc'));
+    const snapAll=await getDocs(q);
+    const docs = tipo==='todo' ? snapAll.docs : snapAll.docs.filter(d=>d.data().tipo===tipo);
+    if(!docs.length){box.innerHTML="<p style='text-align:center;color:#3a5a3e;margin-top:40px;font-weight:600;'>Sin movimientos registrados</p>";return;}
+    const icons={ganancia:'📈',recarga:'➕',recarga_pendiente:'⏳',recarga_rechazada:'❌',retiro:'💸',inversion:'💎',comision:'🤝'};
+    const colors={ganancia:'pos',recarga:'neu',recarga_pendiente:'neu',recarga_rechazada:'neg',retiro:'neg',inversion:'neg',comision:'pos'};
+    const labels={ganancia:'Ganancia minería',recarga:'Recarga aprobada',recarga_pendiente:'Recarga en revisión',recarga_rechazada:'Recarga rechazada',retiro:'Retiro',inversion:'Inversión plan',comision:'Comisión por referido'};
+    box.innerHTML=docs.map(d=>{
+      const h=d.data(),fecha=h.fecha?.toDate?h.fecha.toDate():new Date(h.fecha);
+      const esNeg=(h.tipo==='retiro'||h.tipo==='inversion'||h.tipo==='recarga_rechazada');
+      const esPend=h.tipo==='recarga_pendiente';
+      const prefijo=esPend?'':esNeg?'-$':'+$';
+      return `<div class="hist-item"><span class="hist-icon">${icons[h.tipo]||'💰'}</span><div style="flex:1"><div class="hist-label">${labels[h.tipo]||h.tipo}${h.nivel?' · Nivel '+h.nivel:''}</div><div class="hist-date">${fecha.toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'})}</div></div><span class="hist-amount ${colors[h.tipo]||'pos'}">${prefijo}${parseFloat(h.monto).toFixed(2)}</span></div>`;
+    }).join('');
+  }catch(e){box.innerHTML="<p style='text-align:center;color:#ff5555;margin-top:20px;'>Error al cargar historial</p>";console.error(e);}
+}
+
+async function agregarHistorial(tipo,monto,extra={}){
+  await addDoc(histRef(),{tipo,monto,fecha:serverTimestamp(),...extra});
+}
+
+function renderCuenta(){actualizarUI();}
+
+window.copiarRef=function(){
+  const cod=userData?.codigo||'';
+  navigator.clipboard.writeText(cod).then(()=>showToast('📋 Código copiado: '+cod));
+};
+
+window.copiarCLABE=function(){
+  navigator.clipboard.writeText('646180401628958912').then(()=>showToast('📋 CLABE copiada'));
+};
+
+window.openModalInvertir=function(pkgIdx){
+  selectedPkgIndex=pkgIdx;
+  const pkg=PAQUETES[pkgIdx];
+  const comprados=planesData.filter(p=>p.pkgIndex===pkgIdx).length;
+  const restantes=pkg.limite-comprados;
+  document.getElementById('saldoDisponibleModal').innerText='$'+(userData?.saldo||0).toFixed(2);
+  document.getElementById('pkgInfoModal').innerHTML=
+    `<b style="color:var(--green);font-family:'Fredoka One',cursive;font-size:16px;">${pkg.icono} ${pkg.nombre}</b><br>`+
+    `<span style="color:#a0b8a4;">Precio: <b style="color:white;">MX$${pkg.precio.toFixed(2)}</b> &nbsp;|&nbsp; `+
+    `Tasa: <b style="color:var(--green);">${pkg.tasa}%</b> &nbsp;|&nbsp; `+
+    `Ciclo: <b style="color:white;">${pkg.ciclo} días</b></span><br>`+
+    `<span style="color:#a0b8a4;">Rend. diario: <b style="color:var(--green);">MX$${pkg.diario.toFixed(2)}</b> &nbsp;|&nbsp; `+
+    `Total: <b style="color:var(--green);">MX$${pkg.total.toFixed(2)}</b></span><br>`+
+    `<span style="color:${restantes<=0?'#ff5555':'#ffcc00'};">Límite: <b>${comprados}/${pkg.limite} comprados</b>${restantes<=0?' — ¡Límite alcanzado!':` — ${restantes} disponible${restantes>1?'s':''}`}</span>`;
+  const btn=document.getElementById('btnConfInv');
+  if(restantes<=0){btn.disabled=true;btn.textContent='🚫 LÍMITE ALCANZADO';}
+  else{btn.disabled=false;btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`;}
+  document.getElementById('modalInvertir').classList.add('open');
+};
+
+window.openModalRecargar=function(){
+  comprobanteFile=null;
+  document.getElementById('montoRecarga').value='';
+  document.getElementById('recargaStep1').style.display='block';
+  document.getElementById('recargaStep2').style.display='none';
+  document.getElementById('recargaStep3').style.display='none';
+  document.getElementById('uploadPreview').style.display='none';
+  document.getElementById('uploadPreview').src='';
+  document.getElementById('comprobanteInput').value='';
+  const btn=document.getElementById('btnEnviarComp');
+  btn.classList.remove('activo'); btn.disabled=true;
+  document.getElementById('modalRecargar').classList.add('open');
+};
+
+window.setMonto=function(val){document.getElementById('montoRecarga').value=val;};
+
+window.irADatosBancarios=function(){
+  const monto=parseFloat(document.getElementById('montoRecarga').value);
+  if(!monto||monto<100){
+    const inp=document.getElementById('montoRecarga');
+    inp.style.borderColor='#ff4466';
+    setTimeout(()=>{inp.style.borderColor='rgba(75,245,66,0.15)';},1500);
+    showToast('❌ Monto mínimo: $100'); return;
+  }
+  const fmt='$'+monto.toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2});
+  document.getElementById('montoDisplay').innerHTML=fmt+' <span>MXN</span>';
+  document.getElementById('montoAlerta').innerText=fmt;
+  document.getElementById('recargaStep1').style.display='none';
+  document.getElementById('recargaStep2').style.display='block';
+};
+
+window.volverAMonto=function(){
+  document.getElementById('recargaStep2').style.display='none';
+  document.getElementById('recargaStep1').style.display='block';
+};
+
+window.irASubirComprobante=function(){
+  const monto=parseFloat(document.getElementById('montoRecarga').value);
+  document.getElementById('montoDisplay3').innerHTML='$'+monto.toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2})+' <span>MXN</span>';
+  document.getElementById('recargaStep2').style.display='none';
+  document.getElementById('recargaStep3').style.display='block';
+};
+
+window.volverADatos=function(){
+  document.getElementById('recargaStep3').style.display='none';
+  document.getElementById('recargaStep2').style.display='block';
+};
+
+window.previsualizarComprobante=function(input){
+  if(!input.files||!input.files[0]) return;
+  comprobanteFile=input.files[0];
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const preview=document.getElementById('uploadPreview');
+    preview.src=e.target.result; preview.style.display='block';
+    const btn=document.getElementById('btnEnviarComp');
+    btn.classList.add('activo'); btn.disabled=false;
+  };
+  reader.readAsDataURL(comprobanteFile);
+};
+
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result);
+    r.onerror=()=>reject(new Error('Error leyendo archivo'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function subirImagenImgBB(file){
+  const base64=await fileToBase64(file);
+  const b64=base64.split(',')[1];
+  const form=new FormData();
+  form.append('image',b64);
+  const res=await fetch('https://api.imgbb.com/1/upload?key=1fd075aaa04abe210a2c1e9f1045de70',{method:'POST',body:form});
+  if(!res.ok) throw new Error('ImgBB HTTP error: '+res.status);
+  const json=await res.json();
+  if(!json.success) throw new Error('ImgBB error: '+(json.error?.message||'desconocido'));
+  return json.data.url;
+}
+
+window.enviarSolicitudRecarga=async function(){
+  if(!comprobanteFile){showToast('❌ Sube tu comprobante primero');return;}
+  const monto=parseFloat(document.getElementById('montoRecarga').value);
+  if(!monto||monto<100){showToast('❌ Monto inválido');return;}
+  const btn=document.getElementById('btnEnviarComp');
+  btn.disabled=true; btn.textContent='⏳ Subiendo imagen...'; btn.classList.remove('activo');
+  try{
+    const imagenUrl=await subirImagenImgBB(comprobanteFile);
+    btn.textContent='⏳ Guardando...';
+    const recargaDoc=await addDoc(collection(db,'recargas_pendientes'),{
+      uid:currentUser.uid,
+      usuario:userData?.nombre||'Sin nombre',
+      email:userData?.email||currentUser.email||'',
+      monto, imagenUrl, estado:'pendiente', fecha:serverTimestamp()
+    });
+    await agregarHistorial('recarga_pendiente', monto);
+    btn.textContent='⏳ Notificando...';
+
+    // ── Notificar al bot de RECARGAS con prefijos correctos ──
+    const fecha=new Date().toLocaleString('es-MX',{dateStyle:'full',timeStyle:'short'});
+    const caption=
+      `💰 NUEVA SOLICITUD DE RECARGA\n\n`+
+      `👤 Usuario: ${userData?.nombre||'Sin nombre'}\n`+
+      `📧 Email: ${userData?.email||currentUser.email||''}\n`+
+      `💵 Monto: $${monto.toFixed(2)} MXN\n`+
+      `📅 Fecha: ${fecha}\n`+
+      `ID: ${recargaDoc.id}`;
+    const reply_markup=JSON.stringify({
+      inline_keyboard:[[
+        {text:'✅ APROBAR', callback_data:`recarga_aprobar:${recargaDoc.id}`},
+        {text:'❌ RECHAZAR', callback_data:`recarga_rechazar:${recargaDoc.id}`}
+      ]]
+    });
+    await fetch(`https://api.telegram.org/bot${TOKEN_RECARGAS}/sendPhoto`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:CHAT_ID, photo:imagenUrl, caption, reply_markup})
+    });
+
+    closeModal('modalRecargar');
+    showToast('✅ Comprobante enviado, en revisión 🐸');
+  }catch(e){
+    console.error(e);
+    showToast('❌ Error: '+e.message);
+    btn.disabled=false; btn.textContent='📤 ENVIAR COMPROBANTE'; btn.classList.add('activo');
+  }
+};
+
+window.openModalRetirar=function(){
+  document.getElementById('saldoRetirarModal').innerText='$'+(userData?.saldo||0).toFixed(2);
+  document.getElementById('montoRetiro').value='';
+  document.getElementById('retiroNombre').value='';
+  document.getElementById('retiroCuenta').value='';
+  document.getElementById('retiroFeeBox').classList.remove('visible');
+  const btn=document.getElementById('btnRetiroConfirm');
+  btn.classList.remove('activo'); btn.disabled=true;
+  document.getElementById('modalRetirar').classList.add('open');
+};
+
+window.setRetiroMonto=function(val){document.getElementById('montoRetiro').value=val;onRetiroInput();};
+window.setRetiroMax=function(){
+  const saldo=userData?.saldo||0;
+  if(saldo<=0){showToast('❌ Sin saldo disponible');return;}
+  document.getElementById('montoRetiro').value=saldo.toFixed(2);
+  onRetiroInput();
+};
+
+window.onRetiroInput=function(){
+  const monto=parseFloat(document.getElementById('montoRetiro').value);
+  const nombre=document.getElementById('retiroNombre').value.trim();
+  const cuenta=document.getElementById('retiroCuenta').value.trim();
+  const saldo=userData?.saldo||0;
+  const feeBox=document.getElementById('retiroFeeBox');
+  const btn=document.getElementById('btnRetiroConfirm');
+  if(!monto||monto<10||monto>saldo||!nombre||!cuenta){
+    feeBox.classList.remove('visible'); btn.classList.remove('activo'); btn.disabled=true; return;
+  }
+  const fee=monto*0.10, recibe=monto-fee;
+  document.getElementById('feeMonto').innerText='$'+monto.toFixed(2);
+  document.getElementById('feeComision').innerText='-$'+fee.toFixed(2);
+  document.getElementById('feeRecibe').innerText='$'+recibe.toFixed(2);
+  feeBox.classList.add('visible'); btn.classList.add('activo'); btn.disabled=false;
+};
+
+window.abrirPopupRetiro=function(){
+  const monto=parseFloat(document.getElementById('montoRetiro').value);
+  const saldo=userData?.saldo||0;
+  if(!monto||monto<10){showToast('❌ Monto mínimo: $10');return;}
+  if(monto>saldo){showToast('❌ Saldo insuficiente');return;}
+  const fee=monto*0.10, recibe=monto-fee;
+  document.getElementById('rcpMonto').innerText='$'+monto.toFixed(2);
+  document.getElementById('rcpComision').innerText='-$'+fee.toFixed(2);
+  document.getElementById('rcpRecibe').innerText='$'+recibe.toFixed(2);
+  lanzarDinero();
+  document.getElementById('retiroPopup').classList.add('open');
+};
+
+function lanzarDinero(){
+  const container=document.getElementById('moneyContainer');
+  container.innerHTML='';
+  const icons=['💵','💰','✨','🪙','🐸'];
+  for(let i=0;i<16;i++){
+    const bill=document.createElement('span');
+    bill.className='bill';
+    bill.innerText=icons[Math.floor(Math.random()*icons.length)];
+    bill.style.setProperty('--x',(Math.random()-0.5)*320+'px');
+    bill.style.setProperty('--y',(Math.random()-1)*300+'px');
+    bill.style.setProperty('--r',Math.random()*360+'deg');
+    bill.style.animation='jump 1.5s ease-out forwards';
+    bill.style.animationDelay=(Math.random()*0.4)+'s';
+    container.appendChild(bill);
+  }
+}
+
+window.cerrarPopupRetiro=function(){document.getElementById('retiroPopup').classList.remove('open');};
+
+window.confirmarRetiro=async function(){
+  const monto=parseFloat(document.getElementById('montoRetiro').value);
+  const nombre=document.getElementById('retiroNombre').value.trim();
+  const cuenta=document.getElementById('retiroCuenta').value.trim();
+  const saldo=userData?.saldo||0;
+  if(!monto||monto<10){showToast('❌ Monto mínimo: $10');return;}
+  if(monto>saldo){showToast('❌ Saldo insuficiente');return;}
+  if(!nombre||!cuenta){showToast('❌ Completa tus datos bancarios');return;}
+  const btn=document.getElementById('btnRetiroConfirm');
+  document.getElementById('retiroPopup').classList.remove('open');
+  btn.disabled=true; btn.textContent='Procesando...'; btn.classList.remove('activo');
+  try{
+    await updateDoc(userRef(),{saldo:saldo-monto});
+    await agregarHistorial('retiro',monto);
+    const retiroDoc=await addDoc(collection(db,'retiros_pendientes'),{
+      uid:currentUser.uid,
+      usuario:userData?.nombre||'Sin nombre',
+      email:userData?.email||currentUser.email||'',
+      monto, nombre, cuenta,
+      fee:monto*0.10, recibe:monto*0.90,
+      estado:'pendiente', fecha:serverTimestamp()
+    });
+    actualizarUI(); closeModal('modalRetirar');
+    showToast('💸 Retiro de $'+monto.toFixed(2)+' solicitado');
+
+    // ── Notificar al bot de RETIROS con prefijos correctos ──
+    const fee=monto*0.10, recibe=monto-fee;
+    const fecha=new Date().toLocaleString('es-MX',{dateStyle:'full',timeStyle:'short'});
+    const msg=
+      `🐸 NUEVA SOLICITUD DE RETIRO\n\n`+
+      `👤 Usuario: ${userData?.nombre||'Sin nombre'}\n`+
+      `📧 Email: ${userData?.email||currentUser.email||''}\n`+
+      `💰 Monto: $${monto.toFixed(2)} MXN\n`+
+      `💸 Comisión (10%): -$${fee.toFixed(2)} MXN\n`+
+      `✅ A pagar: $${recibe.toFixed(2)} MXN\n`+
+      `🏦 Cuenta: ${cuenta}\n`+
+      `👤 Titular: ${nombre}\n`+
+      `📅 Fecha: ${fecha}\n`+
+      `ID: ${retiroDoc.id}`;
+    const reply_markup=JSON.stringify({
+      inline_keyboard:[[
+        {text:'✅ APROBAR', callback_data:`retiro_aprobar:${retiroDoc.id}`},
+        {text:'❌ RECHAZAR', callback_data:`retiro_rechazar:${retiroDoc.id}`}
+      ]]
+    });
+    fetch(`https://api.telegram.org/bot${TOKEN_RETIROS}/sendMessage`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:CHAT_ID, text:msg, reply_markup})
+    }).catch(()=>{});
+
+  }catch(e){showToast('❌ Error: '+e.message);}
+  btn.disabled=false; btn.textContent='💸 RETIRAR AHORA'; btn.classList.add('activo');
+};
+
+window.closeModal=function(id){document.getElementById(id).classList.remove('open');};
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m) m.classList.remove('open');});
+});
+
+window.confirmarInversion=async function(){
+  const pkg=PAQUETES[selectedPkgIndex];
+  const saldo=userData?.saldo||0;
+  if(saldo<pkg.precio){showToast('❌ Saldo insuficiente');return;}
+  const comprados=planesData.filter(p=>p.pkgIndex===selectedPkgIndex).length;
+  if(comprados>=pkg.limite){showToast(`❌ Límite alcanzado (máx. ${pkg.limite} por paquete)`);return;}
+  const btn=document.getElementById('btnConfInv');
+  btn.disabled=true; btn.textContent='Procesando...';
+  try{
+    await updateDoc(userRef(),{saldo:saldo-pkg.precio});
+    const docRef=await addDoc(planesRef(),{
+      start:Date.now(), pkgIndex:selectedPkgIndex,
+      monto:pkg.precio, ganancia:pkg.diario,
+      activo:true, creadoEn:serverTimestamp()
+    });
+    await agregarHistorial('inversion',pkg.precio);
+    userData.saldo-=pkg.precio;
+    planesData.unshift({id:docRef.id,start:Date.now(),pkgIndex:selectedPkgIndex,monto:pkg.precio});
+    actualizarUI(); closeModal('modalInvertir');
+    showToast('🐸 ¡Inversión en '+pkg.nombre+' exitosa!');
+  }catch(e){showToast('❌ Error al invertir: '+e.message);btn.disabled=false;btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`;return;}
+  btn.disabled=false; btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`;
+  distribuirComisiones(pkg.precio).catch(e=>console.error('❌ Error comisiones:',e));
+};
+
+async function distribuirComisiones(montoInvertido){
+  const miSnap = await getDoc(userRef());
+  if(!miSnap.exists()) return;
+  const miData = miSnap.data();
+  let codigoActual = miData.refUsado || null;
+  for(let i = 0; i < 3; i++){
+    if(!codigoActual) break;
+    const snap = await getDocs(query(collection(db,'usuarios'), where('codigo','==',codigoActual)));
+    if(snap.empty) break;
+    const padrDoc  = snap.docs[0];
+    const padrData = padrDoc.data();
+    const padrUid  = padrDoc.id;
+    const comision      = parseFloat((montoInvertido * COMISION_PORCENTAJES[i]).toFixed(2));
+    const nuevoSaldo    = parseFloat(((padrData.saldo||0) + comision).toFixed(2));
+    const totalComision = parseFloat(((padrData.totalComisiones||0) + comision).toFixed(2));
+    await updateDoc(doc(db,'usuarios',padrUid), {saldo: nuevoSaldo, totalComisiones: totalComision});
+    await addDoc(collection(db,'usuarios',padrUid,'historial'), {
+      tipo:'comision', monto:comision, nivel:COMISION_NIVELES[i],
+      de:miData.nombre||'Un referido', fecha:serverTimestamp()
+    });
+    codigoActual = padrData.refUsado || null;
+  }
+}
+
+window.showSubPage=function(id){document.getElementById(id).classList.add('open');};
+window.hideSubPage=function(id){document.getElementById(id).classList.remove('open');};
+
+window.showToast=function(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+};
+
+function traducirError(code){
+  const map={
+    'auth/user-not-found':'No existe una cuenta con ese correo',
+    'auth/wrong-password':'Contraseña incorrecta',
+    'auth/email-already-in-use':'Este correo ya está registrado',
+    'auth/invalid-email':'Correo electrónico inválido',
+    'auth/weak-password':'La contraseña es muy débil (mín. 6 caracteres)',
+    'auth/network-request-failed':'Sin conexión a internet',
+    'auth/too-many-requests':'Demasiados intentos. Intenta más tarde',
+    'auth/invalid-credential':'Correo o contraseña incorrectos'
+  };
+  return map[code]||'Error: '+code;
+}
+
+let carouselIndex=0,carouselStartX=0,carouselDragging=false;
+function initCarousel(){
+  const track=document.getElementById('vipTrack'),container=document.getElementById('vipCarousel');
+  if(!track||!container) return;
+  container.addEventListener('touchstart',e=>{carouselStartX=e.touches[0].clientX;carouselDragging=true;track.style.transition='none';},{passive:true});
+  container.addEventListener('touchmove',e=>{if(!carouselDragging) return;const cards=document.querySelectorAll('.vip-card-item');if(!cards.length) return;const cardWidth=cards[0].offsetWidth+16;const centerOffset=(container.offsetWidth/2)-(cards[0].offsetWidth/2)-8;const diff=e.touches[0].clientX-carouselStartX;const move=centerOffset-(carouselIndex*cardWidth)+diff;track.style.transform=`translateX(${move}px)`;},{passive:true});
+  container.addEventListener('touchend',e=>{if(!carouselDragging) return;carouselDragging=false;track.style.transition='transform 0.4s ease-out';const cards=document.querySelectorAll('.vip-card-item');const endX=e.changedTouches[0].clientX;const diff=carouselStartX-endX;if(diff>60&&carouselIndex<cards.length-1) carouselIndex++;else if(diff<-60&&carouselIndex>0) carouselIndex--;updateCarousel();});
+  window.addEventListener('resize',updateCarousel); updateCarousel();
+}
+function updateCarousel(){
+  const track=document.getElementById('vipTrack'),container=document.getElementById('vipCarousel'),cards=document.querySelectorAll('.vip-card-item');
+  if(!track||!container||!cards.length) return;
+  const cardWidth=cards[0].offsetWidth+16,centerOffset=(container.offsetWidth/2)-(cards[0].offsetWidth/2)-8;
+  track.style.transform=`translateX(${centerOffset-(carouselIndex*cardWidth)}px)`;
+  cards.forEach((card,i)=>card.classList.toggle('active',i===carouselIndex));
+}
+</script>
+</body>
+</html>
