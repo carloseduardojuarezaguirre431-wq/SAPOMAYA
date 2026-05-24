@@ -1344,13 +1344,12 @@ function moverTidio() {
   const iframe = document.getElementById('tidio-chat-iframe');
   if (iframe) {
     iframe.style.setProperty('bottom', '90px', 'important');
-    iframe.style.setProperty('right', '10px', 'important');
   } else {
-    setTimeout(moverTidio, 500);
+    setTimeout(moverTidio, 300);
   }
 }
-setTimeout(moverTidio, 2000);
-window.addEventListener('tidioLoaded', moverTidio);
+setTimeout(moverTidio, 1000);
+setInterval(moverTidio, 2000);
 </script>
 </body>
 </html>
