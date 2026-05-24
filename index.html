@@ -1249,21 +1249,27 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 
 window.confirmarInversion=async function(){
   const pkg=PAQUETES[selectedPkgIndex];
-  const saldo=userData?.saldo||0;
-  if(saldo<pkg.precio){showToast('❌ Saldo insuficiente');return;}
+  // Leer saldo actual desde Firebase para evitar inconsistencias
+  const snapActual=await getDoc(userRef());
+  if(!snapActual.exists()){showToast('❌ Error al leer saldo');return;}
+  const saldoReal=snapActual.data().saldo||0;
+  if(saldoReal<pkg.precio){showToast('❌ Saldo insuficiente');return;}
   const comprados=planesData.filter(p=>p.pkgIndex===selectedPkgIndex).length;
   if(comprados>=pkg.limite){showToast(`❌ Límite alcanzado (máx. ${pkg.limite} por paquete)`);return;}
   const btn=document.getElementById('btnConfInv');
   btn.disabled=true; btn.textContent='Procesando...';
   try{
-    await updateDoc(userRef(),{saldo:saldo-pkg.precio});
+    const nuevoSaldo=parseFloat((saldoReal-pkg.precio).toFixed(2));
+    if(nuevoSaldo<0){showToast('❌ Saldo insuficiente');btn.disabled=false;btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`;return;}
+    await updateDoc(userRef(),{saldo:nuevoSaldo});
     const docRef=await addDoc(planesRef(),{
       start:Date.now(), pkgIndex:selectedPkgIndex,
       monto:pkg.precio, ganancia:pkg.diario,
       activo:true, creadoEn:serverTimestamp()
     });
     await agregarHistorial('inversion',pkg.precio);
-    userData.saldo-=pkg.precio;
+    // Actualizar solo la variable local, NO volver a descontar
+    userData.saldo=nuevoSaldo;
     planesData.unshift({id:docRef.id,start:Date.now(),pkgIndex:selectedPkgIndex,monto:pkg.precio});
     actualizarUI(); closeModal('modalInvertir');
     showToast('🐸 ¡Inversión en '+pkg.nombre+' exitosa!');
