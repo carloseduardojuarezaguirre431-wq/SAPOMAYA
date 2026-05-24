@@ -661,7 +661,7 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy, serverTimestamp, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyAv7_CG2OUGKaZyn7Ngt_-WcuawJn2ZLHs",
@@ -1249,31 +1249,34 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 
 window.confirmarInversion=async function(){
   const pkg=PAQUETES[selectedPkgIndex];
-  // Leer saldo actual desde Firebase para evitar inconsistencias
-  const snapActual=await getDoc(userRef());
-  if(!snapActual.exists()){showToast('❌ Error al leer saldo');return;}
-  const saldoReal=snapActual.data().saldo||0;
-  if(saldoReal<pkg.precio){showToast('❌ Saldo insuficiente');return;}
   const comprados=planesData.filter(p=>p.pkgIndex===selectedPkgIndex).length;
   if(comprados>=pkg.limite){showToast(`❌ Límite alcanzado (máx. ${pkg.limite} por paquete)`);return;}
   const btn=document.getElementById('btnConfInv');
   btn.disabled=true; btn.textContent='Procesando...';
   try{
-    const nuevoSaldo=parseFloat((saldoReal-pkg.precio).toFixed(2));
-    if(nuevoSaldo<0){showToast('❌ Saldo insuficiente');btn.disabled=false;btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`;return;}
-    await updateDoc(userRef(),{saldo:nuevoSaldo});
+    // Transacción atómica — evita doble descuento
+    const nuevoSaldo = await db.runTransaction(async(t)=>{
+      const snap=await t.get(userRef());
+      if(!snap.exists()) throw new Error('Usuario no encontrado');
+      const saldoActual=snap.data().saldo||0;
+      if(saldoActual<pkg.precio) throw new Error('SALDO_INSUFICIENTE');
+      const nuevo=parseFloat((saldoActual-pkg.precio).toFixed(2));
+      t.update(userRef(),{saldo:nuevo});
+      return nuevo;
+    });
     const docRef=await addDoc(planesRef(),{
       start:Date.now(), pkgIndex:selectedPkgIndex,
       monto:pkg.precio, ganancia:pkg.diario,
       activo:true, creadoEn:serverTimestamp()
     });
     await agregarHistorial('inversion',pkg.precio);
-    // Actualizar solo la variable local, NO volver a descontar
-    userData.saldo=nuevoSaldo;
     planesData.unshift({id:docRef.id,start:Date.now(),pkgIndex:selectedPkgIndex,monto:pkg.precio});
-    actualizarUI(); closeModal('modalInvertir');
+    closeModal('modalInvertir');
     showToast('🐸 ¡Inversión en '+pkg.nombre+' exitosa!');
-  }catch(e){showToast('❌ Error al invertir: '+e.message);btn.disabled=false;btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`;return;}
+  }catch(e){
+    if(e.message==='SALDO_INSUFICIENTE'){showToast('❌ Saldo insuficiente');}
+    else{showToast('❌ Error al invertir: '+e.message);}
+  }
   btn.disabled=false; btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`;
   distribuirComisiones(pkg.precio).catch(e=>console.error('❌ Error comisiones:',e));
 };
