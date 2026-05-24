@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1256,7 +1257,7 @@ window.confirmarInversion=async function(){
   btn.disabled=true; btn.textContent='Procesando...';
   try{
     // Transacción atómica — evita doble descuento
-    const nuevoSaldo = await db.runTransaction(async(t)=>{
+    const nuevoSaldo = await runTransaction(db, async(t)=>{
       const snap=await t.get(userRef());
       if(!snap.exists()) throw new Error('Usuario no encontrado');
       const saldoActual=snap.data().saldo||0;
