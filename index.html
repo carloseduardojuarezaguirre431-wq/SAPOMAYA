@@ -676,7 +676,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ── Bots separados ──────────────────────────────────────────────
 const TOKEN_RETIROS  = '8668269684:AAHES_9m1QGAXEkAg8KR1TfTLKwgKMiien0';
 const TOKEN_RECARGAS = '8674509022:AAG7WO6PUThf6ddFpZiXQW4sHOL3QQRkMBs';
 const CHAT_ID        = '6837082259';
@@ -1095,8 +1094,6 @@ window.enviarSolicitudRecarga=async function(){
     });
     await agregarHistorial('recarga_pendiente', monto);
     btn.textContent='⏳ Notificando...';
-
-    // ── Notificar al bot de RECARGAS con prefijos correctos ──
     const fecha=new Date().toLocaleString('es-MX',{dateStyle:'full',timeStyle:'short'});
     const caption=
       `💰 NUEVA SOLICITUD DE RECARGA\n\n`+
@@ -1116,7 +1113,6 @@ window.enviarSolicitudRecarga=async function(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({chat_id:CHAT_ID, photo:imagenUrl, caption, reply_markup})
     });
-
     closeModal('modalRecargar');
     showToast('✅ Comprobante enviado, en revisión 🐸');
   }catch(e){
@@ -1218,8 +1214,6 @@ window.confirmarRetiro=async function(){
     });
     actualizarUI(); closeModal('modalRetirar');
     showToast('💸 Retiro de $'+monto.toFixed(2)+' solicitado');
-
-    // ── Notificar al bot de RETIROS con prefijos correctos ──
     const fee=monto*0.10, recibe=monto-fee;
     const fecha=new Date().toLocaleString('es-MX',{dateStyle:'full',timeStyle:'short'});
     const msg=
@@ -1244,7 +1238,6 @@ window.confirmarRetiro=async function(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({chat_id:CHAT_ID, text:msg, reply_markup})
     }).catch(()=>{});
-
   }catch(e){showToast('❌ Error: '+e.message);}
   btn.disabled=false; btn.textContent='💸 RETIRAR AHORA'; btn.classList.add('activo');
 };
@@ -1343,12 +1336,21 @@ function updateCarousel(){
   cards.forEach((card,i)=>card.classList.toggle('active',i===carouselIndex));
 }
 </script>
-<style>
-#tidio-chat-iframe {
-    bottom: 160px !important;
-}
-</style>
 
+<!-- Tidio Chat en Vivo -->
 <script src="//code.tidio.co/wq5fzylddpkpdwoflr33jadogod2dqew.js" async></script>
+<script>
+function moverTidio() {
+  const iframe = document.getElementById('tidio-chat-iframe');
+  if (iframe) {
+    iframe.style.setProperty('bottom', '90px', 'important');
+    iframe.style.setProperty('right', '10px', 'important');
+  } else {
+    setTimeout(moverTidio, 500);
+  }
+}
+setTimeout(moverTidio, 2000);
+window.addEventListener('tidioLoaded', moverTidio);
+</script>
 </body>
 </html>
