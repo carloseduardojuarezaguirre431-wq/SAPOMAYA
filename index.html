@@ -873,14 +873,15 @@ async function verificarYAcreditarGanancias(){
     if(diasNuevos<=0) continue;
     const ganancia=parseFloat((diasNuevos*pkg.diario).toFixed(2));
     try{
-      const snap=await getDoc(userRef());
-      if(!snap.exists()) continue;
-      const saldoActual=snap.data().saldo||0;
-      await updateDoc(userRef(),{saldo:parseFloat((saldoActual+ganancia).toFixed(2))});
+      await runTransaction(db, async(t)=>{
+        const snap=await t.get(userRef());
+        if(!snap.exists()) throw new Error('no-user');
+        const saldoActual=snap.data().saldo||0;
+        t.update(userRef(),{saldo:parseFloat((saldoActual+ganancia).toFixed(2))});
+      });
       await agregarHistorial('ganancia',ganancia,{paquete:pkg.nombre,dias:diasNuevos});
       await updateDoc(doc(db,'usuarios',currentUser.uid,'paquetes',p.id),{diasAcreditados:diasAcreditados+diasNuevos});
       p.diasAcreditados=diasAcreditados+diasNuevos;
-      userData.saldo=parseFloat((saldoActual+ganancia).toFixed(2));
       showToast(`💰 +$${ganancia.toFixed(2)} acreditado de ${pkg.nombre}`);
     }catch(e){console.error('Error acreditando ganancia:',e);}
   }
