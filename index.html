@@ -232,7 +232,8 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
 .rcp-cancel:hover{color:white;}
 .rcp-ok{flex:1.6;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--green),#28c023);color:#030a05;font-family:'Fredoka One',cursive;font-size:15px;cursor:pointer;font-weight:400;outline:none;box-shadow:0 6px 18px rgba(75,245,66,0.3);transition:.2s;}
 .rcp-ok:hover{transform:scale(1.03);}
-.vincular-modal-overlay{position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;}
+
+.vincular-modal-overlay{position:fixed;inset:0;z-index:6000;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;}
 .vincular-modal-overlay.open{display:flex;}
 .vincular-modal-box{background:linear-gradient(180deg,#0d1f10,#060e08);border:1px solid rgba(75,245,66,0.25);border-radius:24px;padding:28px 22px;width:100%;max-width:400px;animation:slideUp 0.3s ease;}
 .vincular-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
@@ -243,16 +244,16 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
 .vincular-locked-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(75,245,66,0.08);}
 .vincular-locked-row:last-child{border-bottom:none;}
 .vincular-locked-row .vll{font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;}
-.vincular-locked-row .vlv{font-family:'Fredoka One',cursive;font-size:15px;color:white;font-weight:400;}
+.vincular-locked-row .vlv{font-family:'Fredoka One',cursive;font-size:15px;color:white;font-weight:400;word-break:break-all;text-align:right;max-width:60%;}
 .vincular-lock-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,204,0,0.1);border:1px solid rgba(255,204,0,0.3);border-radius:10px;padding:7px 14px;font-size:11px;font-weight:800;color:#ffcc00;letter-spacing:1px;margin-bottom:18px;}
 .vincular-input-wrap{position:relative;margin-bottom:12px;}
 .vincular-input-wrap label{display:block;font-size:9px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
 .vincular-input-wrap input{width:100%;background:rgba(0,0,0,0.45);border:1px solid rgba(75,245,66,0.18);border-radius:12px;padding:13px 14px;color:white;font-size:14px;font-family:'Nunito',sans-serif;font-weight:600;outline:none;transition:.3s;}
 .vincular-input-wrap input:focus{border-color:var(--green);box-shadow:0 0 12px rgba(75,245,66,0.15);}
 .vincular-input-wrap input::placeholder{color:#3a5a3e;}
-.vincular-input-wrap input:disabled{opacity:0.5;cursor:not-allowed;}
 .btn-vincular{width:100%;padding:14px;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:17px;letter-spacing:1px;cursor:pointer;transition:.3s;outline:none;background:linear-gradient(135deg,var(--green),#28c023);color:#030a05;box-shadow:0 8px 24px rgba(75,245,66,0.25);margin-top:4px;}
 .btn-vincular:disabled{opacity:0.4;cursor:not-allowed;}
+
 </style>
 </head>
 <body>
@@ -296,10 +297,8 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
     </div>
 
     <div class="plan-card">
-      <div class="plan-banner">
-        <span class="plan-icon">🐸</span>
-        <div class="plan-label">SMILISCA BAUDINII</div>
-        <div class="plan-sub" style="color:#a0c8a4;">Rana Arborícola Mexicana · Endémica</div>
+      <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;min-height:180px;">
+        <img src="inversion1.png" alt="Smilisca baudinii" style="width:100%;height:auto;display:block;">
       </div>
       <div class="plan-body">
         <div class="plan-stats">
@@ -316,10 +315,8 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
     </div>
 
     <div class="plan-card">
-      <div class="plan-banner">
-        <span class="plan-icon">🐸</span>
-        <div class="plan-label">AGALYCHNIS MORELETII</div>
-        <div class="plan-sub" style="color:#a0c8a4;">Rana de Ojos Negros · Endémica</div>
+      <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;">
+        <img src="inversion2.png" alt="Agalychnis moreletii" style="width:100%;height:auto;display:block;">
       </div>
       <div class="plan-body">
         <div class="plan-stats">
@@ -337,12 +334,7 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
 
     <div class="plan-card">
       <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;min-height:180px;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Triprion_spatulatus.jpg/640px-Triprion_spatulatus.jpg" alt="Triprion spatulatus" style="width:100%;height:180px;object-fit:cover;opacity:0.55;display:block;" onerror="this.style.display='none'">
-        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,10,5,0.2) 0%,rgba(3,10,5,0.88) 60%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 20px 20px;">
-          <span class="plan-icon" style="margin-bottom:4px;font-size:36px;">🐸</span>
-          <div class="plan-label">TRIPRION SPATULATUS</div>
-          <div class="plan-sub" style="color:#a0c8a4;">Rana Pico de Pato · Endémica</div>
-        </div>
+        <img src="inversion3.png" alt="Triprion spatulatus" style="width:100%;height:auto;display:block;">
       </div>
       <div class="plan-body">
         <div class="plan-stats">
@@ -360,12 +352,7 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
 
     <div class="plan-card">
       <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;min-height:180px;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Lithobates_megapoda.jpg/640px-Lithobates_megapoda.jpg" alt="Lithobates megapoda" style="width:100%;height:180px;object-fit:cover;opacity:0.55;display:block;" onerror="this.style.display='none'">
-        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,10,5,0.2) 0%,rgba(3,10,5,0.88) 60%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 20px 20px;">
-          <span class="plan-icon" style="margin-bottom:4px;font-size:36px;">🐸</span>
-          <div class="plan-label">LITHOBATES MEGAPODA</div>
-          <div class="plan-sub" style="color:#a0c8a4;">Rana Patona · Endémica</div>
-        </div>
+        <img src="inversion4.png" alt="Lithobates megapoda" style="width:100%;height:auto;display:block;">
       </div>
       <div class="plan-body">
         <div class="plan-stats">
@@ -383,12 +370,7 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
 
     <div class="plan-card">
       <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;min-height:180px;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Charadrahyla_trux.jpg/640px-Charadrahyla_trux.jpg" alt="Charadrahyla trux" style="width:100%;height:180px;object-fit:cover;opacity:0.55;display:block;" onerror="this.style.display='none'">
-        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,10,5,0.2) 0%,rgba(3,10,5,0.88) 60%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 20px 20px;">
-          <span class="plan-icon" style="margin-bottom:4px;font-size:36px;">🐸</span>
-          <div class="plan-label">CHARADRAHYLA TRUX</div>
-          <div class="plan-sub" style="color:#a0c8a4;">Rana de Árbol de Espolón · Endémica</div>
-        </div>
+        <img src="inversion5.png" alt="Charadrahyla trux" style="width:100%;height:auto;display:block;">
       </div>
       <div class="plan-body">
         <div class="plan-stats">
@@ -406,12 +388,7 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
 
     <div class="plan-card">
       <div class="plan-banner" style="padding:0;position:relative;overflow:hidden;min-height:180px;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Pachymedusa_dacnicolor.jpg/640px-Pachymedusa_dacnicolor.jpg" alt="Pachymedusa dacnicolor" style="width:100%;height:180px;object-fit:cover;opacity:0.55;display:block;" onerror="this.style.display='none'">
-        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,10,5,0.2) 0%,rgba(3,10,5,0.88) 60%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px 20px 20px;">
-          <span class="plan-icon" style="margin-bottom:4px;font-size:36px;">🐸</span>
-          <div class="plan-label">PACHYMEDUSA DACNICOLOR</div>
-          <div class="plan-sub" style="color:#a0c8a4;">Rana Verde Gigante · Endémica</div>
-        </div>
+        <img src="inversion6.png" alt="Pachymedusa dacnicolor" style="width:100%;height:auto;display:block;">
       </div>
       <div class="plan-body">
         <div class="plan-stats">
@@ -577,6 +554,7 @@ nav a.active .nav-emoji{transform:translateY(-3px) scale(1.25);filter:drop-shado
     </div>
   </div>
 </div>
+
 <!-- MODAL INVERTIR -->
 <div class="modal-overlay" id="modalInvertir">
   <div class="modal-box">
@@ -936,7 +914,6 @@ async function verificarYAcreditarGanancias(){
     if(diasNuevos<=0) continue;
     const ganancia=parseFloat((diasNuevos*pkg.diario).toFixed(2));
     try{
-      // increment es atómico en Firestore
       await updateDoc(userRef(),{saldo: increment(ganancia)});
       await agregarHistorial('ganancia',ganancia,{paquete:pkg.nombre,dias:diasNuevos});
       await updateDoc(doc(db,'usuarios',currentUser.uid,'paquetes',p.id),{diasAcreditados:diasAcreditados+diasNuevos});
@@ -1314,12 +1291,10 @@ window.confirmarInversion=async function(){
   const btn=document.getElementById('btnConfInv');
   btn.disabled=true; btn.textContent='Procesando...';
   try{
-    // Verificar saldo antes de descontar
     const snapCheck=await getDoc(userRef());
     if(!snapCheck.exists()) throw new Error('Usuario no encontrado');
     const saldoActual=snapCheck.data().saldo||0;
     if(saldoActual<pkg.precio) throw new Error('SALDO_INSUFICIENTE');
-    // increment negativo es atómico en Firestore
     await updateDoc(userRef(),{saldo: increment(-pkg.precio)});
     const docRef=await addDoc(planesRef(),{
       start:Date.now(), pkgIndex:selectedPkgIndex,
@@ -1401,6 +1376,7 @@ function updateCarousel(){
   track.style.transform=`translateX(${centerOffset-(carouselIndex*cardWidth)}px)`;
   cards.forEach((card,i)=>card.classList.toggle('active',i===carouselIndex));
 }
+
 // ===== VINCULAR CUENTA BANCARIA =====
 window.openModalVincular = function(){
   if(userData && userData.cuentaBancaria){
@@ -1457,8 +1433,11 @@ window.openModalRetirar = function(){
     const cb = userData.cuentaBancaria;
     nomInput.value    = cb.nombre || '';
     cuentaInput.value = cb.clabe  || '';
-    nomInput.disabled    = true; nomInput.style.opacity    = '0.6';
-    cuentaInput.disabled = true; cuentaInput.style.opacity = '0.6';
+    nomInput.disabled    = true;
+    cuentaInput.disabled = true;
+    nomInput.style.opacity    = '0.65';
+    cuentaInput.style.opacity = '0.65';
+    // badge con cuenta vinculada
     let badge = document.getElementById('retiroCuentaVinculadaBadge');
     if(!badge){
       badge = document.createElement('div');
@@ -1468,8 +1447,10 @@ window.openModalRetirar = function(){
       feeBox.parentNode.insertBefore(badge, feeBox);
     }
     const masked = '*'.repeat(14) + cb.clabe.slice(-4);
-    badge.innerHTML = '🏦 ' + cb.banco + ' · <b>' + masked + '</b>';
+    badge.innerHTML = '🏦 ' + cb.banco + ' &nbsp;·&nbsp; <b>' + masked + '</b>';
     badge.style.display = 'flex';
+    // re-trigger validation since fields are pre-filled
+    onRetiroInput();
   } else {
     nomInput.disabled    = false; nomInput.style.opacity    = '1';
     cuentaInput.disabled = false; cuentaInput.style.opacity = '1';
@@ -1477,6 +1458,7 @@ window.openModalRetirar = function(){
     if(badge) badge.style.display = 'none';
   }
 };
+
 </script>
 
 <!-- Tidio Chat en Vivo -->
