@@ -738,7 +738,24 @@ const TOKEN_RECARGAS = '8674509022:AAG7WO6PUThf6ddFpZiXQW4sHOL3QQRkMBs';
 const CHAT_ID        = '6837082259';
 
 const COMISION_PORCENTAJES = [0.10, 0.05, 0.02];
-const COMISION_NIVELES     = ['1',  '2',  '3' ];
+const COMISION_NIVELES     = ['1',  '2',  '3'];
+
+// ─── CONFIG VIP ───────────────────────────────────────────────────────────────
+// Recompensa mensual y requisitos por nivel
+const VIP_CONFIG = [
+  null, // VIP 0 — sin recompensa
+  { invitados: 3,  minInversion: 300, recompensa: 50   },
+  { invitados: 6,  minInversion: 300, recompensa: 100  },
+  { invitados: 9,  minInversion: 300, recompensa: 150  },
+  { invitados: 12, minInversion: 300, recompensa: 200  },
+  { invitados: 15, minInversion: 300, recompensa: 300  },
+  { invitados: 18, minInversion: 300, recompensa: 400  },
+  { invitados: 21, minInversion: 300, recompensa: 500  },
+  { invitados: 25, minInversion: 300, recompensa: 600  },
+  { invitados: 30, minInversion: 300, recompensa: 800  },
+  { invitados: 40, minInversion: 300, recompensa: 1000 },
+];
+// ─────────────────────────────────────────────────────────────────────────────
 
 const PAQUETES = [
   { nombre:'SMILISCA BAUDINII',       precio:100,  tasa:4.00, diario:4.00,   total:340.00,   ciclo:60,  limite:1, icono:'🐸', sub:'Rana Arborícola Mexicana' },
@@ -755,13 +772,20 @@ let selectedPkgIndex=0;
 
 onAuthStateChanged(auth, async (user)=>{
   document.getElementById('loadingScreen').style.display='none';
-  if(user){currentUser=user; await cargarUsuario(); entrarApp();}
-  else{currentUser=null; userData=null; mostrarLogin();}
+  if(user){
+    currentUser=user;
+    await cargarUsuario();
+    entrarApp();
+    // Verificar recompensa mensual al entrar
+    await verificarRecompensaMensual();
+  } else {
+    currentUser=null; userData=null; mostrarLogin();
+  }
 });
 
-function userRef(){return doc(db,'usuarios',currentUser.uid);}
-function planesRef(){return collection(db,'usuarios',currentUser.uid,'paquetes');}
-function histRef(){return collection(db,'usuarios',currentUser.uid,'historial');}
+function userRef(){ return doc(db,'usuarios',currentUser.uid); }
+function planesRef(){ return collection(db,'usuarios',currentUser.uid,'paquetes'); }
+function histRef(){ return collection(db,'usuarios',currentUser.uid,'historial'); }
 
 async function cargarUsuario(){
   const snap=await getDoc(userRef());
@@ -773,10 +797,104 @@ async function cargarUsuario(){
 
 function suscribirSaldo(){
   onSnapshot(userRef(),(snap)=>{
-    if(snap.exists()){userData=snap.data(); document.getElementById('coinAmount').innerText=(userData.saldo||0).toFixed(2);}
+    if(snap.exists()){ userData=snap.data(); document.getElementById('coinAmount').innerText=(userData.saldo||0).toFixed(2); }
   });
 }
 
+// ─── VIP: contar invitados calificados ────────────────────────────────────────
+// Un invitado califica si tiene al menos un plan con precio >= $300
+async function contarInvitadosCalificados(){
+  const refSnap = await getDocs(collection(db,'usuarios',currentUser.uid,'referidos'));
+  let calificados = 0;
+  for(const refDoc of refSnap.docs){
+    const refUid = refDoc.data().uid;
+    if(!refUid) continue;
+    try{
+      const planesSnap = await getDocs(collection(db,'usuarios',refUid,'paquetes'));
+      let totalInvertido = 0;
+      planesSnap.forEach(p=>{
+        const pkg = PAQUETES[p.data().pkgIndex];
+        if(pkg) totalInvertido += pkg.precio;
+      });
+      if(totalInvertido >= 300) calificados++;
+    } catch(e){ console.warn('Error leyendo planes de referido:', refUid, e); }
+  }
+  return calificados;
+}
+
+// Calcular nivel VIP según invitados calificados (nunca baja)
+function calcularNivelVip(invCalificados, vipActual){
+  let nivelNuevo = 0;
+  for(let i = VIP_CONFIG.length-1; i >= 1; i--){
+    if(invCalificados >= VIP_CONFIG[i].invitados){ nivelNuevo = i; break; }
+  }
+  // Nunca baja — mantiene el máximo histórico
+  return Math.max(nivelNuevo, vipActual || 0);
+}
+
+// ─── RECOMPENSA MENSUAL ───────────────────────────────────────────────────────
+async function verificarRecompensaMensual(){
+  if(!currentUser || !userData) return;
+
+  const ahora      = new Date();
+  const mesActual  = `${ahora.getFullYear()}-${String(ahora.getMonth()+1).padStart(2,'0')}`;
+  const ultimoMes  = userData.ultimaRecompensaMes || '';
+
+  // Solo procesar si es día 1 o si en este mes aún no se acreditó
+  // (Para pruebas: quitar la condición del día y solo revisar el mes)
+  const esDia1 = ahora.getDate() === 1;
+  if(!esDia1) return;                        // ← solo ejecuta el día 1
+  if(ultimoMes === mesActual) return;        // ya se cobró este mes
+
+  const vipMax = userData.vipMaxAlcanzado || 0;
+  if(vipMax < 1) return;                     // VIP 0 no cobra
+
+  const config = VIP_CONFIG[vipMax];
+  if(!config) return;
+
+  // Verificar que aún cumple los requisitos (tiene los invitados calificados)
+  const invCalificados = await contarInvitadosCalificados();
+  if(invCalificados < config.invitados){
+    // No cumple actualmente → no se acredita este mes, pero nivel no baja
+    showToast(`ℹ️ Necesitas ${config.invitados} invitados activos para tu recompensa VIP${vipMax}`);
+    return;
+  }
+
+  const recompensa = config.recompensa;
+
+  try{
+    // Acreditar saldo
+    await updateDoc(userRef(),{
+      saldo: increment(recompensa),
+      ultimaRecompensaMes: mesActual,
+    });
+    // Historial
+    await agregarHistorial('recompensa_vip', recompensa, { nivel: vipMax, mes: mesActual });
+
+    showToast(`🏆 Recompensa VIP${vipMax}: +$${recompensa.toFixed(2)} acreditados 🐸`);
+
+    // Notificar al admin por Telegram
+    const fecha = ahora.toLocaleString('es-MX',{dateStyle:'full',timeStyle:'short'});
+    const msg =
+      `🏆 RECOMPENSA VIP ACREDITADA\n\n`+
+      `👤 Usuario: ${userData.nombre||'Sin nombre'}\n`+
+      `📧 Email: ${userData.email||currentUser.email||''}\n`+
+      `⭐ Nivel: VIP${vipMax}\n`+
+      `💰 Recompensa: $${recompensa.toFixed(2)} MXN\n`+
+      `👥 Invitados calificados: ${invCalificados}/${config.invitados}\n`+
+      `📅 Fecha: ${fecha}\n`+
+      `📆 Mes: ${mesActual}`;
+
+    fetch(`https://api.telegram.org/bot${TOKEN_RETIROS}/sendMessage`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ chat_id: CHAT_ID, text: msg })
+    }).catch(()=>{});
+
+  } catch(e){ console.error('Error acreditando recompensa VIP:', e); }
+}
+
+// ─── LOGIN / REGISTRO ─────────────────────────────────────────────────────────
 window.switchLoginTab=function(tab,btn){
   document.querySelectorAll('.ltab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
@@ -792,8 +910,8 @@ window.doLogin=async function(){
   err.textContent='';
   if(!email||!pass){err.textContent='Completa todos los campos';return;}
   btn.disabled=true; btn.textContent='Entrando...';
-  try{await signInWithEmailAndPassword(auth,email,pass);}
-  catch(e){err.textContent=traducirError(e.code);btn.disabled=false;btn.textContent='🐸 ENTRAR';}
+  try{ await signInWithEmailAndPassword(auth,email,pass); }
+  catch(e){ err.textContent=traducirError(e.code); btn.disabled=false; btn.textContent='🐸 ENTRAR'; }
 };
 
 window.doRegister=async function(){
@@ -811,19 +929,23 @@ window.doRegister=async function(){
     const cred=await createUserWithEmailAndPassword(auth,email,pass);
     const uid=cred.user.uid;
     const codigo='REF-'+Math.random().toString(36).substr(2,4).toUpperCase();
-    await setDoc(doc(db,'usuarios',uid),{nombre,email,saldo:0,vip:0,codigo,refUsado:ref||null,creadoEn:serverTimestamp()});
+    await setDoc(doc(db,'usuarios',uid),{
+      nombre,email,saldo:0,vip:0,vipMaxAlcanzado:0,
+      codigo,refUsado:ref||null,creadoEn:serverTimestamp(),
+      ultimaRecompensaMes:''
+    });
     if(ref) await registrarReferido(uid,nombre,ref);
-  }catch(e){err.textContent=traducirError(e.code);btn.disabled=false;btn.textContent='⚡ CREAR CUENTA';}
+  } catch(e){ err.textContent=traducirError(e.code); btn.disabled=false; btn.textContent='⚡ CREAR CUENTA'; }
 };
 
 async function registrarReferido(nuevoUid,nuevoNombre,codigoRef){
   try{
     const snap=await getDocs(query(collection(db,'usuarios'),where('codigo','==',codigoRef)));
     if(!snap.empty) await addDoc(collection(db,'usuarios',snap.docs[0].id,'referidos'),{uid:nuevoUid,nombre:nuevoNombre,nivel:'1',fecha:serverTimestamp()});
-  }catch(e){console.warn('Ref error:',e);}
+  } catch(e){ console.warn('Ref error:',e); }
 }
 
-window.cerrarSesion=async function(){await signOut(auth);};
+window.cerrarSesion=async function(){ await signOut(auth); };
 
 function mostrarLogin(){
   document.getElementById('loginScreen').style.display='flex';
@@ -853,15 +975,27 @@ window.showPage=function(id,el){
   if(id==='pgCuenta') renderCuenta();
 };
 
-function actualizarUI(){
+async function actualizarUI(){
   if(!userData) return;
   document.getElementById('coinAmount').innerText=(userData.saldo||0).toFixed(2);
-  const lvl=planesData.length>=5?3:planesData.length>=3?2:planesData.length>=1?1:0;
-  document.getElementById('vipStatus').innerText='Nivel VIP '+lvl;
-  document.getElementById('userVip').innerText='VIP '+lvl;
+
+  // Calcular VIP real con invitados calificados
+  const invCalificados = await contarInvitadosCalificados();
+  const vipMaxGuardado = userData.vipMaxAlcanzado || 0;
+  const nivelVip = calcularNivelVip(invCalificados, vipMaxGuardado);
+
+  // Actualizar en Firestore si subió de nivel
+  if(nivelVip !== vipMaxGuardado){
+    await updateDoc(userRef(),{ vip: nivelVip, vipMaxAlcanzado: nivelVip });
+    userData.vip = nivelVip;
+    userData.vipMaxAlcanzado = nivelVip;
+    showToast(`🏆 ¡Subiste a VIP${nivelVip}! Tu recompensa mensual es $${VIP_CONFIG[nivelVip].recompensa}`);
+  }
+
+  document.getElementById('vipStatus').innerText='Nivel VIP '+nivelVip;
+  document.getElementById('userVip').innerText='VIP '+nivelVip;
   document.getElementById('userNameDisplay').innerText=userData.nombre||'Usuario_Maya';
   document.getElementById('refCode').innerText=userData.codigo||'REF-????';
-  if((userData.vip||0)!==lvl) updateDoc(userRef(),{vip:lvl}).catch(()=>{});
 }
 
 const DIA_MS = 86400000;
@@ -897,7 +1031,10 @@ function renderMineria(){
     acum+=Math.min(diasPasados,diasTotales)*pkg.diario;
   });
   document.getElementById('totalAcum').innerText='$'+acum.toFixed(2);
-  if(!planesData.length){list.innerHTML="<p style='text-align:center;color:#3a5a3e;margin-top:30px;font-weight:700;'>No tienes mineros activos<br><span style='font-size:11px;'>Invierte desde la pantalla Inicio</span></p>";return;}
+  if(!planesData.length){
+    list.innerHTML="<p style='text-align:center;color:#3a5a3e;margin-top:30px;font-weight:700;'>No tienes mineros activos<br><span style='font-size:11px;'>Invierte desde la pantalla Inicio</span></p>";
+    return;
+  }
   list.innerHTML=planesData.map(p=>{
     const {pkg,diasPasados,diasTotales,msRestanteHoy,pctDia,completado}=infoCicloDiario(p);
     const ganado=(Math.min(diasPasados,diasTotales)*pkg.diario).toFixed(2);
@@ -934,7 +1071,7 @@ async function verificarYAcreditarGanancias(){
       await updateDoc(doc(db,'usuarios',currentUser.uid,'paquetes',p.id),{diasAcreditados:diasAcreditados+diasNuevos});
       p.diasAcreditados=diasAcreditados+diasNuevos;
       showToast(`💰 +$${ganancia.toFixed(2)} acreditado de ${pkg.nombre}`);
-    }catch(e){console.error('Error acreditando ganancia:',e);}
+    } catch(e){ console.error('Error acreditando ganancia:',e); }
   }
 }
 
@@ -964,25 +1101,95 @@ function iniciarTimers(){
   },1000);
 }
 
+// ─── SECCIÓN EQUIPO ───────────────────────────────────────────────────────────
 async function renderEquipo(){
-  const snap = await getDocs(collection(db,'usuarios',currentUser.uid,'referidos'));
-  document.getElementById('eqMiembros').innerText = snap.size;
+  const refSnap = await getDocs(collection(db,'usuarios',currentUser.uid,'referidos'));
+  const totalMiembros = refSnap.size;
+  document.getElementById('eqMiembros').innerText = totalMiembros;
+
   let totalInv = 0;
-  for (const refDoc of snap.docs) {
+  let invCalificados = 0;
+
+  for(const refDoc of refSnap.docs){
     const refUid = refDoc.data().uid;
-    if (!refUid) continue;
-    try {
+    if(!refUid) continue;
+    try{
       const refPlanesSnap = await getDocs(collection(db,'usuarios',refUid,'paquetes'));
-      refPlanesSnap.forEach(p => {
-        const pkg = PAQUETES[p.data().pkgIndex] || PAQUETES[0];
-        totalInv += pkg.precio;
+      let totalInvRefido = 0;
+      refPlanesSnap.forEach(p=>{
+        const pkg = PAQUETES[p.data().pkgIndex];
+        if(pkg){ totalInv += pkg.precio; totalInvRefido += pkg.precio; }
       });
-    } catch(e) { console.warn('Error leyendo planes de referido:', refUid, e); }
+      if(totalInvRefido >= 300) invCalificados++;
+    } catch(e){ console.warn('Error leyendo planes de referido:', refUid, e); }
   }
+
   document.getElementById('eqInversion').innerText = '$' + totalInv.toFixed(2);
-  document.getElementById('eqComision').innerText = '$' + (userData?.totalComisiones || 0).toFixed(2);
-  actualizarUI();
-  updateCarousel();
+  document.getElementById('eqComision').innerText  = '$' + (userData?.totalComisiones || 0).toFixed(2);
+
+  // Nivel VIP actual (máximo histórico)
+  const vipMax = userData?.vipMaxAlcanzado || 0;
+  const nivelActual = calcularNivelVip(invCalificados, vipMax);
+  document.getElementById('vipStatus').innerText = 'Nivel VIP ' + nivelActual;
+  document.getElementById('userVip').innerText   = 'VIP ' + nivelActual;
+
+  // Actualizar carrusel con datos reales
+  actualizarCarruselVip(invCalificados, nivelActual);
+}
+
+// Actualizar tarjetas VIP con progreso real
+function actualizarCarruselVip(invCalificados, nivelActual){
+  const cards = document.querySelectorAll('.vip-card-item');
+  cards.forEach((card, i)=>{
+    const nivel = i + 1;
+    const cfg   = VIP_CONFIG[nivel];
+    if(!cfg) return;
+
+    const cumple    = invCalificados >= cfg.invitados;
+    const esMiNivel = nivelActual === nivel;
+    const pct       = Math.min(100, Math.round((invCalificados / cfg.invitados) * 100));
+
+    // Badge de estado
+    let badgeHtml = '';
+    if(nivelActual > nivel){
+      badgeHtml = `<div style="font-size:10px;font-weight:800;color:#39ff14;background:rgba(57,255,20,0.12);border:1px solid rgba(57,255,20,0.3);border-radius:8px;padding:3px 10px;display:inline-block;margin-bottom:6px;">✅ ALCANZADO</div>`;
+    } else if(esMiNivel){
+      badgeHtml = `<div style="font-size:10px;font-weight:800;color:#ffcc00;background:rgba(255,204,0,0.12);border:1px solid rgba(255,204,0,0.3);border-radius:8px;padding:3px 10px;display:inline-block;margin-bottom:6px;">⭐ NIVEL ACTUAL</div>`;
+    } else {
+      badgeHtml = `<div style="font-size:10px;font-weight:800;color:#5a7a5e;background:rgba(90,122,94,0.1);border:1px solid rgba(90,122,94,0.2);border-radius:8px;padding:3px 10px;display:inline-block;margin-bottom:6px;">🔒 BLOQUEADO</div>`;
+    }
+
+    // Barra de progreso de invitados
+    const barColor = cumple ? '#39ff14' : '#ffcc00';
+    const barHtml  = `
+      <div style="margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#5a7a5e;font-weight:700;margin-bottom:4px;">
+          <span>Invitados calificados</span>
+          <span style="color:${barColor};">${invCalificados}/${cfg.invitados}</span>
+        </div>
+        <div style="background:rgba(0,0,0,0.4);height:6px;border-radius:3px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px;transition:width 0.6s;"></div>
+        </div>
+        <div style="font-size:10px;color:#5a7a5e;margin-top:6px;font-weight:600;">
+          💰 Recompensa mensual: <b style="color:#ffcc00;">MX$${cfg.recompensa.toFixed(2)}</b>
+        </div>
+        <div style="font-size:10px;color:#5a7a5e;font-weight:600;">
+          📅 Se acredita el <b style="color:white;">día 1 de cada mes</b>
+        </div>
+      </div>`;
+
+    // Reemplazar descripción en la tarjeta
+    const descEl = card.querySelector('.vip-card-desc');
+    if(descEl){
+      descEl.innerHTML =
+        badgeHtml +
+        `<span>Invita a <b style="color:white;">${cfg.invitados} miembros</b> y haz que cada uno invierta al menos <b style="color:white;">MX$${cfg.minInversion.toFixed(2)}</b> en cualquier plan.</span>` +
+        barHtml;
+    }
+
+    // Borde especial para nivel actual
+    card.style.borderColor = esMiNivel ? '#ffcc00' : nivelActual > nivel ? 'rgba(57,255,20,0.4)' : '#444';
+  });
 }
 
 let filtroActual='todo';
@@ -998,35 +1205,41 @@ async function renderHistorial(tipo){
     const q=query(histRef(),orderBy('fecha','desc'));
     const snapAll=await getDocs(q);
     const docs = tipo==='todo' ? snapAll.docs : snapAll.docs.filter(d=>d.data().tipo===tipo);
-    if(!docs.length){box.innerHTML="<p style='text-align:center;color:#3a5a3e;margin-top:40px;font-weight:600;'>Sin movimientos registrados</p>";return;}
-    const icons={ganancia:'📈',recarga:'➕',recarga_pendiente:'⏳',recarga_rechazada:'❌',retiro:'💸',inversion:'💎',comision:'🤝'};
-    const colors={ganancia:'pos',recarga:'neu',recarga_pendiente:'neu',recarga_rechazada:'neg',retiro:'neg',inversion:'neg',comision:'pos'};
-    const labels={ganancia:'Ganancia minería',recarga:'Recarga aprobada',recarga_pendiente:'Recarga en revisión',recarga_rechazada:'Recarga rechazada',retiro:'Retiro',inversion:'Inversión plan',comision:'Comisión por referido'};
+    if(!docs.length){
+      box.innerHTML="<p style='text-align:center;color:#3a5a3e;margin-top:40px;font-weight:600;'>Sin movimientos registrados</p>";
+      return;
+    }
+    const icons  = {ganancia:'📈',recarga:'➕',recarga_pendiente:'⏳',recarga_rechazada:'❌',retiro:'💸',inversion:'💎',comision:'🤝',recompensa_vip:'🏆'};
+    const colors = {ganancia:'pos',recarga:'neu',recarga_pendiente:'neu',recarga_rechazada:'neg',retiro:'neg',inversion:'neg',comision:'pos',recompensa_vip:'pos'};
+    const labels = {ganancia:'Ganancia minería',recarga:'Recarga aprobada',recarga_pendiente:'Recarga en revisión',recarga_rechazada:'Recarga rechazada',retiro:'Retiro',inversion:'Inversión plan',comision:'Comisión por referido',recompensa_vip:'Recompensa VIP mensual'};
     box.innerHTML=docs.map(d=>{
-      const h=d.data(),fecha=h.fecha?.toDate?h.fecha.toDate():new Date(h.fecha);
+      const h=d.data(), fecha=h.fecha?.toDate?h.fecha.toDate():new Date(h.fecha);
       const esNeg=(h.tipo==='retiro'||h.tipo==='inversion'||h.tipo==='recarga_rechazada');
       const esPend=h.tipo==='recarga_pendiente';
       const prefijo=esPend?'':esNeg?'-$':'+$';
       return `<div class="hist-item"><span class="hist-icon">${icons[h.tipo]||'💰'}</span><div style="flex:1"><div class="hist-label">${labels[h.tipo]||h.tipo}${h.nivel?' · Nivel '+h.nivel:''}</div><div class="hist-date">${fecha.toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'})}</div></div><span class="hist-amount ${colors[h.tipo]||'pos'}">${prefijo}${parseFloat(h.monto).toFixed(2)}</span></div>`;
     }).join('');
-  }catch(e){box.innerHTML="<p style='text-align:center;color:#ff5555;margin-top:20px;'>Error al cargar historial</p>";console.error(e);}
+  } catch(e){
+    box.innerHTML="<p style='text-align:center;color:#ff5555;margin-top:20px;'>Error al cargar historial</p>";
+    console.error(e);
+  }
 }
 
 async function agregarHistorial(tipo,monto,extra={}){
   await addDoc(histRef(),{tipo,monto,fecha:serverTimestamp(),...extra});
 }
 
-function renderCuenta(){actualizarUI();}
+function renderCuenta(){ actualizarUI(); }
 
 window.copiarRef=function(){
   const cod=userData?.codigo||'';
   navigator.clipboard.writeText(cod).then(()=>showToast('📋 Código copiado: '+cod));
 };
-
 window.copiarCLABE=function(){
   navigator.clipboard.writeText('646180401628958912').then(()=>showToast('📋 CLABE copiada'));
 };
 
+// ─── MODALES INVERSIÓN ────────────────────────────────────────────────────────
 window.openModalInvertir=function(pkgIdx){
   selectedPkgIndex=pkgIdx;
   const pkg=PAQUETES[pkgIdx];
@@ -1042,8 +1255,8 @@ window.openModalInvertir=function(pkgIdx){
     `Total: <b style="color:var(--green);">MX$${pkg.total.toFixed(2)}</b></span><br>`+
     `<span style="color:${restantes<=0?'#ff5555':'#ffcc00'};">Límite: <b>${comprados}/${pkg.limite} comprados</b>${restantes<=0?' — ¡Límite alcanzado!':` — ${restantes} disponible${restantes>1?'s':''}`}</span>`;
   const btn=document.getElementById('btnConfInv');
-  if(restantes<=0){btn.disabled=true;btn.textContent='🚫 LÍMITE ALCANZADO';}
-  else{btn.disabled=false;btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`;}
+  if(restantes<=0){ btn.disabled=true; btn.textContent='🚫 LÍMITE ALCANZADO'; }
+  else{ btn.disabled=false; btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`; }
   document.getElementById('modalInvertir').classList.add('open');
 };
 
@@ -1061,14 +1274,14 @@ window.openModalRecargar=function(){
   document.getElementById('modalRecargar').classList.add('open');
 };
 
-window.setMonto=function(val){document.getElementById('montoRecarga').value=val;};
+window.setMonto=function(val){ document.getElementById('montoRecarga').value=val; };
 
 window.irADatosBancarios=function(){
   const monto=parseFloat(document.getElementById('montoRecarga').value);
   if(!monto||monto<100){
     const inp=document.getElementById('montoRecarga');
     inp.style.borderColor='#ff4466';
-    setTimeout(()=>{inp.style.borderColor='rgba(75,245,66,0.15)';},1500);
+    setTimeout(()=>{ inp.style.borderColor='rgba(75,245,66,0.15)'; },1500);
     showToast('❌ Monto mínimo: $100'); return;
   }
   const fmt='$'+monto.toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2});
@@ -1082,14 +1295,12 @@ window.volverAMonto=function(){
   document.getElementById('recargaStep2').style.display='none';
   document.getElementById('recargaStep1').style.display='block';
 };
-
 window.irASubirComprobante=function(){
   const monto=parseFloat(document.getElementById('montoRecarga').value);
   document.getElementById('montoDisplay3').innerHTML='$'+monto.toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:2})+' <span>MXN</span>';
   document.getElementById('recargaStep2').style.display='none';
   document.getElementById('recargaStep3').style.display='block';
 };
-
 window.volverADatos=function(){
   document.getElementById('recargaStep3').style.display='none';
   document.getElementById('recargaStep2').style.display='block';
@@ -1139,8 +1350,7 @@ window.enviarSolicitudRecarga=async function(){
     const imagenUrl=await subirImagenImgBB(comprobanteFile);
     btn.textContent='⏳ Guardando...';
     const recargaDoc=await addDoc(collection(db,'recargas_pendientes'),{
-      uid:currentUser.uid,
-      usuario:userData?.nombre||'Sin nombre',
+      uid:currentUser.uid, usuario:userData?.nombre||'Sin nombre',
       email:userData?.email||currentUser.email||'',
       monto, imagenUrl, estado:'pendiente', fecha:serverTimestamp()
     });
@@ -1154,26 +1364,20 @@ window.enviarSolicitudRecarga=async function(){
       `💵 Monto: $${monto.toFixed(2)} MXN\n`+
       `📅 Fecha: ${fecha}\n`+
       `ID: ${recargaDoc.id}`;
-    const reply_markup=JSON.stringify({
-      inline_keyboard:[[
-        {text:'✅ APROBAR', callback_data:`recarga_aprobar:${recargaDoc.id}`},
-        {text:'❌ RECHAZAR', callback_data:`recarga_rechazar:${recargaDoc.id}`}
-      ]]
-    });
+    const reply_markup=JSON.stringify({inline_keyboard:[[{text:'✅ APROBAR',callback_data:`recarga_aprobar:${recargaDoc.id}`},{text:'❌ RECHAZAR',callback_data:`recarga_rechazar:${recargaDoc.id}`}]]});
     await fetch(`https://api.telegram.org/bot${TOKEN_RECARGAS}/sendPhoto`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({chat_id:CHAT_ID, photo:imagenUrl, caption, reply_markup})
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:CHAT_ID,photo:imagenUrl,caption,reply_markup})
     });
     closeModal('modalRecargar');
     showToast('✅ Comprobante enviado, en revisión 🐸');
-  }catch(e){
-    console.error(e);
-    showToast('❌ Error: '+e.message);
+  } catch(e){
+    console.error(e); showToast('❌ Error: '+e.message);
     btn.disabled=false; btn.textContent='📤 ENVIAR COMPROBANTE'; btn.classList.add('activo');
   }
 };
 
+// ─── RETIRO ───────────────────────────────────────────────────────────────────
 window.openModalRetirar=function(){
   document.getElementById('saldoRetirarModal').innerText='$'+(userData?.saldo||0).toFixed(2);
   document.getElementById('montoRetiro').value='';
@@ -1185,7 +1389,7 @@ window.openModalRetirar=function(){
   document.getElementById('modalRetirar').classList.add('open');
 };
 
-window.setRetiroMonto=function(val){document.getElementById('montoRetiro').value=val;onRetiroInput();};
+window.setRetiroMonto=function(val){ document.getElementById('montoRetiro').value=val; onRetiroInput(); };
 window.setRetiroMax=function(){
   const saldo=userData?.saldo||0;
   if(saldo<=0){showToast('❌ Sin saldo disponible');return;}
@@ -1240,7 +1444,7 @@ function lanzarDinero(){
   }
 }
 
-window.cerrarPopupRetiro=function(){document.getElementById('retiroPopup').classList.remove('open');};
+window.cerrarPopupRetiro=function(){ document.getElementById('retiroPopup').classList.remove('open'); };
 
 window.confirmarRetiro=async function(){
   const monto=parseFloat(document.getElementById('montoRetiro').value);
@@ -1257,11 +1461,9 @@ window.confirmarRetiro=async function(){
     await updateDoc(userRef(),{saldo:saldo-monto});
     await agregarHistorial('retiro',monto);
     const retiroDoc=await addDoc(collection(db,'retiros_pendientes'),{
-      uid:currentUser.uid,
-      usuario:userData?.nombre||'Sin nombre',
+      uid:currentUser.uid, usuario:userData?.nombre||'Sin nombre',
       email:userData?.email||currentUser.email||'',
-      monto, nombre, cuenta,
-      fee:monto*0.10, recibe:monto*0.90,
+      monto, nombre, cuenta, fee:monto*0.10, recibe:monto*0.90,
       estado:'pendiente', fecha:serverTimestamp()
     });
     actualizarUI(); closeModal('modalRetirar');
@@ -1279,24 +1481,18 @@ window.confirmarRetiro=async function(){
       `👤 Titular: ${nombre}\n`+
       `📅 Fecha: ${fecha}\n`+
       `ID: ${retiroDoc.id}`;
-    const reply_markup=JSON.stringify({
-      inline_keyboard:[[
-        {text:'✅ APROBAR', callback_data:`retiro_aprobar:${retiroDoc.id}`},
-        {text:'❌ RECHAZAR', callback_data:`retiro_rechazar:${retiroDoc.id}`}
-      ]]
-    });
+    const reply_markup=JSON.stringify({inline_keyboard:[[{text:'✅ APROBAR',callback_data:`retiro_aprobar:${retiroDoc.id}`},{text:'❌ RECHAZAR',callback_data:`retiro_rechazar:${retiroDoc.id}`}]]});
     fetch(`https://api.telegram.org/bot${TOKEN_RETIROS}/sendMessage`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({chat_id:CHAT_ID, text:msg, reply_markup})
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:CHAT_ID,text:msg,reply_markup})
     }).catch(()=>{});
-  }catch(e){showToast('❌ Error: '+e.message);}
+  } catch(e){ showToast('❌ Error: '+e.message); }
   btn.disabled=false; btn.textContent='💸 RETIRAR AHORA'; btn.classList.add('activo');
 };
 
-window.closeModal=function(id){document.getElementById(id).classList.remove('open');};
+window.closeModal=function(id){ document.getElementById(id).classList.remove('open'); };
 document.querySelectorAll('.modal-overlay').forEach(m=>{
-  m.addEventListener('click',e=>{if(e.target===m) m.classList.remove('open');});
+  m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); });
 });
 
 window.confirmarInversion=async function(){
@@ -1320,40 +1516,40 @@ window.confirmarInversion=async function(){
     planesData.unshift({id:docRef.id,start:Date.now(),pkgIndex:selectedPkgIndex,monto:pkg.precio});
     closeModal('modalInvertir');
     showToast('🐸 ¡Inversión en '+pkg.nombre+' exitosa!');
-  }catch(e){
-    if(e.message==='SALDO_INSUFICIENTE'){showToast('❌ Saldo insuficiente');}
-    else{showToast('❌ Error al invertir: '+e.message);}
+    // Re-evaluar VIP tras invertir (puede que el propio usuario suba de nivel)
+    await actualizarUI();
+  } catch(e){
+    if(e.message==='SALDO_INSUFICIENTE') showToast('❌ Saldo insuficiente');
+    else showToast('❌ Error al invertir: '+e.message);
   }
   btn.disabled=false; btn.textContent=`⚡ CONFIRMAR MX$${pkg.precio.toFixed(2)}`;
   distribuirComisiones(pkg.precio).catch(e=>console.error('❌ Error comisiones:',e));
 };
 
 async function distribuirComisiones(montoInvertido){
-  const miSnap = await getDoc(userRef());
+  const miSnap=await getDoc(userRef());
   if(!miSnap.exists()) return;
-  const miData = miSnap.data();
-  let codigoActual = miData.refUsado || null;
-  for(let i = 0; i < 3; i++){
+  const miData=miSnap.data();
+  let codigoActual=miData.refUsado||null;
+  for(let i=0;i<3;i++){
     if(!codigoActual) break;
-    const snap = await getDocs(query(collection(db,'usuarios'), where('codigo','==',codigoActual)));
+    const snap=await getDocs(query(collection(db,'usuarios'),where('codigo','==',codigoActual)));
     if(snap.empty) break;
-    const padrDoc  = snap.docs[0];
-    const padrData = padrDoc.data();
-    const padrUid  = padrDoc.id;
-    const comision      = parseFloat((montoInvertido * COMISION_PORCENTAJES[i]).toFixed(2));
-    const nuevoSaldo    = parseFloat(((padrData.saldo||0) + comision).toFixed(2));
-    const totalComision = parseFloat(((padrData.totalComisiones||0) + comision).toFixed(2));
-    await updateDoc(doc(db,'usuarios',padrUid), {saldo: nuevoSaldo, totalComisiones: totalComision});
-    await addDoc(collection(db,'usuarios',padrUid,'historial'), {
-      tipo:'comision', monto:comision, nivel:COMISION_NIVELES[i],
-      de:miData.nombre||'Un referido', fecha:serverTimestamp()
+    const padrDoc=snap.docs[0], padrData=padrDoc.data(), padrUid=padrDoc.id;
+    const comision=parseFloat((montoInvertido*COMISION_PORCENTAJES[i]).toFixed(2));
+    const nuevoSaldo=parseFloat(((padrData.saldo||0)+comision).toFixed(2));
+    const totalComision=parseFloat(((padrData.totalComisiones||0)+comision).toFixed(2));
+    await updateDoc(doc(db,'usuarios',padrUid),{saldo:nuevoSaldo,totalComisiones:totalComision});
+    await addDoc(collection(db,'usuarios',padrUid,'historial'),{
+      tipo:'comision',monto:comision,nivel:COMISION_NIVELES[i],
+      de:miData.nombre||'Un referido',fecha:serverTimestamp()
     });
-    codigoActual = padrData.refUsado || null;
+    codigoActual=padrData.refUsado||null;
   }
 }
 
-window.showSubPage=function(id){document.getElementById(id).classList.add('open');};
-window.hideSubPage=function(id){document.getElementById(id).classList.remove('open');};
+window.showSubPage=function(id){ document.getElementById(id).classList.add('open'); };
+window.hideSubPage=function(id){ document.getElementById(id).classList.remove('open'); };
 
 window.showToast=function(msg){
   const t=document.getElementById('toast');
@@ -1375,152 +1571,115 @@ function traducirError(code){
   return map[code]||'Error: '+code;
 }
 
-let carouselIndex=0,carouselStartX=0,carouselDragging=false;
+// ─── CARRUSEL VIP ─────────────────────────────────────────────────────────────
+let carouselIndex=0, carouselStartX=0, carouselDragging=false;
 function initCarousel(){
-  const track=document.getElementById('vipTrack'),container=document.getElementById('vipCarousel');
+  const track=document.getElementById('vipTrack'), container=document.getElementById('vipCarousel');
   if(!track||!container) return;
-  container.addEventListener('touchstart',e=>{carouselStartX=e.touches[0].clientX;carouselDragging=true;track.style.transition='none';},{passive:true});
-  container.addEventListener('touchmove',e=>{if(!carouselDragging) return;const cards=document.querySelectorAll('.vip-card-item');if(!cards.length) return;const cardWidth=cards[0].offsetWidth+16;const centerOffset=(container.offsetWidth/2)-(cards[0].offsetWidth/2)-8;const diff=e.touches[0].clientX-carouselStartX;const move=centerOffset-(carouselIndex*cardWidth)+diff;track.style.transform=`translateX(${move}px)`;},{passive:true});
-  container.addEventListener('touchend',e=>{if(!carouselDragging) return;carouselDragging=false;track.style.transition='transform 0.4s ease-out';const cards=document.querySelectorAll('.vip-card-item');const endX=e.changedTouches[0].clientX;const diff=carouselStartX-endX;if(diff>60&&carouselIndex<cards.length-1) carouselIndex++;else if(diff<-60&&carouselIndex>0) carouselIndex--;updateCarousel();});
+  container.addEventListener('touchstart',e=>{ carouselStartX=e.touches[0].clientX; carouselDragging=true; track.style.transition='none'; },{passive:true});
+  container.addEventListener('touchmove',e=>{
+    if(!carouselDragging) return;
+    const cards=document.querySelectorAll('.vip-card-item');
+    if(!cards.length) return;
+    const cardWidth=cards[0].offsetWidth+16;
+    const centerOffset=(container.offsetWidth/2)-(cards[0].offsetWidth/2)-8;
+    const diff=e.touches[0].clientX-carouselStartX;
+    track.style.transform=`translateX(${centerOffset-(carouselIndex*cardWidth)+diff}px)`;
+  },{passive:true});
+  container.addEventListener('touchend',e=>{
+    if(!carouselDragging) return;
+    carouselDragging=false; track.style.transition='transform 0.4s ease-out';
+    const cards=document.querySelectorAll('.vip-card-item');
+    const endX=e.changedTouches[0].clientX, diff=carouselStartX-endX;
+    if(diff>60&&carouselIndex<cards.length-1) carouselIndex++;
+    else if(diff<-60&&carouselIndex>0) carouselIndex--;
+    updateCarousel();
+  });
   window.addEventListener('resize',updateCarousel); updateCarousel();
 }
+
 function updateCarousel(){
-  const track=document.getElementById('vipTrack'),container=document.getElementById('vipCarousel'),cards=document.querySelectorAll('.vip-card-item');
+  const track=document.getElementById('vipTrack'), container=document.getElementById('vipCarousel');
+  const cards=document.querySelectorAll('.vip-card-item');
   if(!track||!container||!cards.length) return;
-  const cardWidth=cards[0].offsetWidth+16,centerOffset=(container.offsetWidth/2)-(cards[0].offsetWidth/2)-8;
+  const cardWidth=cards[0].offsetWidth+16;
+  const centerOffset=(container.offsetWidth/2)-(cards[0].offsetWidth/2)-8;
   track.style.transform=`translateX(${centerOffset-(carouselIndex*cardWidth)}px)`;
   cards.forEach((card,i)=>card.classList.toggle('active',i===carouselIndex));
 }
 
-// ===== VINCULAR CUENTA BANCARIA =====
-window.openModalVincular = function(){
-  if(userData && userData.cuentaBancaria){
-    const cb = userData.cuentaBancaria;
-    document.getElementById('lockedNombre').innerText = cb.nombre || '—';
-    document.getElementById('lockedClabe').innerText  = cb.clabe  || '—';
-    document.getElementById('lockedBanco').innerText  = cb.banco  || '—';
-    document.getElementById('vincularFormView').style.display   = 'none';
-    document.getElementById('vincularLockedView').style.display = 'block';
+// ─── VINCULAR CUENTA BANCARIA ─────────────────────────────────────────────────
+window.openModalVincular=function(){
+  if(userData&&userData.cuentaBancaria){
+    const cb=userData.cuentaBancaria;
+    document.getElementById('lockedNombre').innerText=cb.nombre||'—';
+    document.getElementById('lockedClabe').innerText=cb.clabe||'—';
+    document.getElementById('lockedBanco').innerText=cb.banco||'—';
+    document.getElementById('vincularFormView').style.display='none';
+    document.getElementById('vincularLockedView').style.display='block';
   } else {
-    document.getElementById('vincularFormView').style.display   = 'block';
-    document.getElementById('vincularLockedView').style.display = 'none';
-    document.getElementById('vincularNombre').value = '';
-    document.getElementById('vincularClabe').value  = '';
-    document.getElementById('vincularBanco').value  = '';
+    document.getElementById('vincularFormView').style.display='block';
+    document.getElementById('vincularLockedView').style.display='none';
+    document.getElementById('vincularNombre').value='';
+    document.getElementById('vincularClabe').value='';
+    document.getElementById('vincularBanco').value='';
   }
   document.getElementById('modalVincular').classList.add('open');
 };
 
-window.closeModalVincular = function(){
-  document.getElementById('modalVincular').classList.remove('open');
-};
+window.closeModalVincular=function(){ document.getElementById('modalVincular').classList.remove('open'); };
 
-document.getElementById('modalVincular').addEventListener('click', function(e){
-  if(e.target === this) this.classList.remove('open');
-});
+document.getElementById('modalVincular').addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); });
 
-window.guardarCuentaBancaria = async function(){
-  const nombre = document.getElementById('vincularNombre').value.trim();
-  const clabe  = document.getElementById('vincularClabe').value.trim();
-  const banco  = document.getElementById('vincularBanco').value.trim();
-  if(!nombre || !clabe || !banco){ showToast('❌ Completa todos los campos'); return; }
-  if(clabe.length !== 18 || !/^\d{18}$/.test(clabe)){ showToast('❌ La CLABE debe tener 18 dígitos'); return; }
-  const btn = document.getElementById('btnVincularConfirm');
-  btn.disabled = true; btn.textContent = 'Guardando...';
+window.guardarCuentaBancaria=async function(){
+  const nombre=document.getElementById('vincularNombre').value.trim();
+  const clabe=document.getElementById('vincularClabe').value.trim();
+  const banco=document.getElementById('vincularBanco').value.trim();
+  if(!nombre||!clabe||!banco){showToast('❌ Completa todos los campos');return;}
+  if(clabe.length!==18||!/^\d{18}$/.test(clabe)){showToast('❌ La CLABE debe tener 18 dígitos');return;}
+  const btn=document.getElementById('btnVincularConfirm');
+  btn.disabled=true; btn.textContent='Guardando...';
   try{
-    await updateDoc(userRef(), { cuentaBancaria: { nombre, clabe, banco } });
-    userData.cuentaBancaria = { nombre, clabe, banco };
+    await updateDoc(userRef(),{cuentaBancaria:{nombre,clabe,banco}});
+    userData.cuentaBancaria={nombre,clabe,banco};
     closeModalVincular();
     showToast('✅ Cuenta bancaria vinculada correctamente 🏦');
   } catch(e){
-    showToast('❌ Error al guardar: ' + e.message);
-    btn.disabled = false; btn.textContent = '🏦 VINCULAR CUENTA';
+    showToast('❌ Error al guardar: '+e.message);
+    btn.disabled=false; btn.textContent='🏦 VINCULAR CUENTA';
   }
 };
 
-// Parche: llenar datos bancarios automáticamente en el modal de retiro
-const _origOpenModalRetirar = window.openModalRetirar;
-window.openModalRetirar = function(){
+const _origOpenModalRetirar=window.openModalRetirar;
+window.openModalRetirar=function(){
   _origOpenModalRetirar();
-  const nomInput    = document.getElementById('retiroNombre');
-  const cuentaInput = document.getElementById('retiroCuenta');
-  if(userData && userData.cuentaBancaria){
-    const cb = userData.cuentaBancaria;
-    nomInput.value    = cb.nombre || '';
-    cuentaInput.value = cb.clabe  || '';
-    nomInput.disabled    = true;
-    cuentaInput.disabled = true;
-    nomInput.style.opacity    = '0.65';
-    cuentaInput.style.opacity = '0.65';
-    // badge con cuenta vinculada
-    let badge = document.getElementById('retiroCuentaVinculadaBadge');
+  const nomInput=document.getElementById('retiroNombre');
+  const cuentaInput=document.getElementById('retiroCuenta');
+  if(userData&&userData.cuentaBancaria){
+    const cb=userData.cuentaBancaria;
+    nomInput.value=cb.nombre||''; cuentaInput.value=cb.clabe||'';
+    nomInput.disabled=true; cuentaInput.disabled=true;
+    nomInput.style.opacity='0.65'; cuentaInput.style.opacity='0.65';
+    let badge=document.getElementById('retiroCuentaVinculadaBadge');
     if(!badge){
-      badge = document.createElement('div');
-      badge.id = 'retiroCuentaVinculadaBadge';
-      badge.style.cssText = 'background:rgba(75,245,66,0.07);border:1px solid rgba(75,245,66,0.2);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:6px;';
-      const feeBox = document.getElementById('retiroFeeBox');
-      feeBox.parentNode.insertBefore(badge, feeBox);
+      badge=document.createElement('div');
+      badge.id='retiroCuentaVinculadaBadge';
+      badge.style.cssText='background:rgba(75,245,66,0.07);border:1px solid rgba(75,245,66,0.2);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:6px;';
+      const feeBox=document.getElementById('retiroFeeBox');
+      feeBox.parentNode.insertBefore(badge,feeBox);
     }
-    const masked = '*'.repeat(14) + cb.clabe.slice(-4);
-    badge.innerHTML = '🏦 ' + cb.banco + ' &nbsp;·&nbsp; <b>' + masked + '</b>';
-    badge.style.display = 'flex';
-    // re-trigger validation since fields are pre-filled
+    const masked='*'.repeat(14)+cb.clabe.slice(-4);
+    badge.innerHTML='🏦 '+cb.banco+' &nbsp;·&nbsp; <b>'+masked+'</b>';
+    badge.style.display='flex';
     onRetiroInput();
   } else {
-    nomInput.disabled    = false; nomInput.style.opacity    = '1';
-    cuentaInput.disabled = false; cuentaInput.style.opacity = '1';
-    const badge = document.getElementById('retiroCuentaVinculadaBadge');
-    if(badge) badge.style.display = 'none';
+    nomInput.disabled=false; nomInput.style.opacity='1';
+    cuentaInput.disabled=false; cuentaInput.style.opacity='1';
+    const badge=document.getElementById('retiroCuentaVinculadaBadge');
+    if(badge) badge.style.display='none';
   }
 };
 
-</script>
-<!-- Tawk.to Chat -->
-<!--Start of Tawk.to Script-->
-<script type="text/javascript">
-var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-(function(){
-var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-s1.async=true;
-s1.src='https://embed.tawk.to/6a1556bbca67221c346bef86/1jphlljkl';
-s1.charset='UTF-8';
-s1.setAttribute('crossorigin','*');
-s0.parentNode.insertBefore(s1,s0);
-})();
-</script>
-<!--End of Tawk.to Script-->
-
-<!-- Boton chat personalizado arrastrable -->
-<style>
-#btnChat{position:fixed;bottom:160px;right:15px;width:52px;height:52px;background:#39ff14;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 15px #39ff14;z-index:9999;cursor:grab;touch-action:none;border:none;}
-</style>
-<button id="btnChat">💬</button>
-<script>
-// Ocultar boton original de Tawk.to y mostrar el nuestro
-Tawk_API.onLoad = function(){
-  Tawk_API.hideWidget();
-  document.getElementById('btnChat').style.display='flex';
-};
-
-// Logica arrastrable
-const cb = document.getElementById('btnChat');
-let drag=false, moved=false, sx, sy, ox, oy;
-cb.addEventListener('touchstart',e=>{
-  drag=true; moved=false;
-  sx=e.touches[0].clientX; sy=e.touches[0].clientY;
-  ox=cb.offsetLeft; oy=cb.offsetTop;
-},{passive:true});
-cb.addEventListener('touchmove',e=>{
-  if(!drag) return; moved=true;
-  cb.style.left=(ox+e.touches[0].clientX-sx)+'px';
-  cb.style.top=(oy+e.touches[0].clientY-sy)+'px';
-  cb.style.right='auto'; cb.style.bottom='auto';
-},{passive:true});
-cb.addEventListener('touchend',()=>{
-  drag=false;
-  if(!moved) Tawk_API.toggle();
-});
-cb.addEventListener('click',()=>Tawk_API.toggle());
 </script>
 </body>
 </html>
