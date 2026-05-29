@@ -836,26 +836,28 @@ function calcularNivelVip(invCalificados, vipActual){
 async function verificarRecompensaMensual(){
   if(!currentUser || !userData) return;
 
-  const ahora      = new Date();
+  // Hora real del servidor Firebase
+  const pingRef = doc(db, '_serverTime', currentUser.uid);
+  await setDoc(pingRef, { t: serverTimestamp() });
+  const pingSnap = await getDoc(pingRef);
+  if(!pingSnap.exists()) return;
+
+  const ahora = pingSnap.data().t.toDate();
   const mesActual  = `${ahora.getFullYear()}-${String(ahora.getMonth()+1).padStart(2,'0')}`;
   const ultimoMes  = userData.ultimaRecompensaMes || '';
 
-  // Solo procesar si es día 1 o si en este mes aún no se acreditó
-  // (Para pruebas: quitar la condición del día y solo revisar el mes)
   const esDia1 = ahora.getDate() === 1;
-  if(!esDia1) return;                        // ← solo ejecuta el día 1
-  if(ultimoMes === mesActual) return;        // ya se cobró este mes
+  if(!esDia1) return;
+  if(ultimoMes === mesActual) return;
 
   const vipMax = userData.vipMaxAlcanzado || 0;
-  if(vipMax < 1) return;                     // VIP 0 no cobra
+  if(vipMax < 1) return;
 
   const config = VIP_CONFIG[vipMax];
   if(!config) return;
 
-  // Verificar que aún cumple los requisitos (tiene los invitados calificados)
   const invCalificados = await contarInvitadosCalificados();
   if(invCalificados < config.invitados){
-    // No cumple actualmente → no se acredita este mes, pero nivel no baja
     showToast(`ℹ️ Necesitas ${config.invitados} invitados activos para tu recompensa VIP${vipMax}`);
     return;
   }
@@ -863,17 +865,13 @@ async function verificarRecompensaMensual(){
   const recompensa = config.recompensa;
 
   try{
-    // Acreditar saldo
     await updateDoc(userRef(),{
       saldo: increment(recompensa),
       ultimaRecompensaMes: mesActual,
     });
-    // Historial
     await agregarHistorial('recompensa_vip', recompensa, { nivel: vipMax, mes: mesActual });
-
     showToast(`🏆 Recompensa VIP${vipMax}: +$${recompensa.toFixed(2)} acreditados 🐸`);
 
-    // Notificar al admin por Telegram
     const fecha = ahora.toLocaleString('es-MX',{dateStyle:'full',timeStyle:'short'});
     const msg =
       `🏆 RECOMPENSA VIP ACREDITADA\n\n`+
@@ -1102,39 +1100,180 @@ function iniciarTimers(){
 }
 
 // ─── SECCIÓN EQUIPO ───────────────────────────────────────────────────────────
+
+// ─── SECCIÓN EQUIPO ───────────────────────────────────────────────────────────
 async function renderEquipo(){
-  const refSnap = await getDocs(collection(db,'usuarios',currentUser.uid,'referidos'));
-  const totalMiembros = refSnap.size;
-  document.getElementById('eqMiembros').innerText = totalMiembros;
+  const equipoBox = document.getElementById('pgEquipo');
 
+  // Mostrar loading
+  let listaEl = document.getElementById('lista-equipo');
+  if(!listaEl){
+    listaEl = document.createElement('div');
+    listaEl.id = 'lista-equipo';
+    // Insertar después de .comision-card
+    equipoBox.appendChild(listaEl);
+  }
+  listaEl.innerHTML = `<p style="text-align:center;color:#3a5a3e;margin-top:10px;font-weight:700;">Cargando equipo...</p>`;
+
+  let totalMiembros = 0;
   let totalInv = 0;
-  let invCalificados = 0;
+  let invCalificados = 0; // solo nivel 1 para VIP
+  let miembrosDetalle = []; // {nombre, nivel, totalInvertido, califica}
 
-  for(const refDoc of refSnap.docs){
-    const refUid = refDoc.data().uid;
-    if(!refUid) continue;
+  // ── NIVEL 1 ──────────────────────────────────────────────────────────────
+  const refSnap1 = await getDocs(collection(db,'usuarios',currentUser.uid,'referidos'));
+
+  for(const refDoc1 of refSnap1.docs){
+    const refUid1  = refDoc1.data().uid;
+    const refNom1  = refDoc1.data().nombre || 'Usuario';
+    if(!refUid1) continue;
+    totalMiembros++;
+
+    let invN1 = 0;
     try{
-      const refPlanesSnap = await getDocs(collection(db,'usuarios',refUid,'paquetes'));
-      let totalInvRefido = 0;
-      refPlanesSnap.forEach(p=>{
-        const pkg = PAQUETES[p.data().pkgIndex];
-        if(pkg){ totalInv += pkg.precio; totalInvRefido += pkg.precio; }
-      });
-      if(totalInvRefido >= 300) invCalificados++;
-    } catch(e){ console.warn('Error leyendo planes de referido:', refUid, e); }
+      const planesSnap = await getDocs(collection(db,'usuarios',refUid1,'paquetes'));
+      planesSnap.forEach(p=>{ const pkg=PAQUETES[p.data().pkgIndex]; if(pkg){ invN1+=pkg.precio; totalInv+=pkg.precio; } });
+    }catch(e){}
+
+    const califica1 = invN1 >= 300;
+    if(califica1) invCalificados++;
+    miembrosDetalle.push({ nombre: refNom1, nivel: 1, totalInvertido: invN1, califica: califica1 });
+
+    // ── NIVEL 2 ────────────────────────────────────────────────────────────
+    try{
+      const refSnap2 = await getDocs(collection(db,'usuarios',refUid1,'referidos'));
+      for(const refDoc2 of refSnap2.docs){
+        const refUid2 = refDoc2.data().uid;
+        const refNom2 = refDoc2.data().nombre || 'Usuario';
+        if(!refUid2) continue;
+        totalMiembros++;
+
+        let invN2 = 0;
+        try{
+          const planesSnap2 = await getDocs(collection(db,'usuarios',refUid2,'paquetes'));
+          planesSnap2.forEach(p=>{ const pkg=PAQUETES[p.data().pkgIndex]; if(pkg){ invN2+=pkg.precio; totalInv+=pkg.precio; } });
+        }catch(e){}
+
+        miembrosDetalle.push({ nombre: refNom2, nivel: 2, totalInvertido: invN2, califica: invN2>=300 });
+
+        // ── NIVEL 3 ──────────────────────────────────────────────────────
+        try{
+          const refSnap3 = await getDocs(collection(db,'usuarios',refUid2,'referidos'));
+          for(const refDoc3 of refSnap3.docs){
+            const refUid3 = refDoc3.data().uid;
+            const refNom3 = refDoc3.data().nombre || 'Usuario';
+            if(!refUid3) continue;
+            totalMiembros++;
+
+            let invN3 = 0;
+            try{
+              const planesSnap3 = await getDocs(collection(db,'usuarios',refUid3,'paquetes'));
+              planesSnap3.forEach(p=>{ const pkg=PAQUETES[p.data().pkgIndex]; if(pkg){ invN3+=pkg.precio; totalInv+=pkg.precio; } });
+            }catch(e){}
+
+            miembrosDetalle.push({ nombre: refNom3, nivel: 3, totalInvertido: invN3, califica: invN3>=300 });
+          }
+        }catch(e){}
+      }
+    }catch(e){}
   }
 
+  // ── Actualizar stats ──────────────────────────────────────────────────────
+  document.getElementById('eqMiembros').innerText  = totalMiembros;
   document.getElementById('eqInversion').innerText = '$' + totalInv.toFixed(2);
   document.getElementById('eqComision').innerText  = '$' + (userData?.totalComisiones || 0).toFixed(2);
 
-  // Nivel VIP actual (máximo histórico)
-  const vipMax = userData?.vipMaxAlcanzado || 0;
+  const vipMax     = userData?.vipMaxAlcanzado || 0;
   const nivelActual = calcularNivelVip(invCalificados, vipMax);
+
+  // Guardar si subió
+  if(nivelActual !== vipMax){
+    await updateDoc(userRef(),{ vip: nivelActual, vipMaxAlcanzado: nivelActual });
+    userData.vip = nivelActual; userData.vipMaxAlcanzado = nivelActual;
+    showToast(`🏆 ¡Subiste a VIP${nivelActual}!`);
+  }
+
   document.getElementById('vipStatus').innerText = 'Nivel VIP ' + nivelActual;
   document.getElementById('userVip').innerText   = 'VIP ' + nivelActual;
 
-  // Actualizar carrusel con datos reales
   actualizarCarruselVip(invCalificados, nivelActual);
+
+  // ── Render lista de miembros ──────────────────────────────────────────────
+  const nivelColor  = { 1:'#4bf542', 2:'#ffcc00', 3:'#88aaff' };
+  const nivelLabel  = { 1:'Nv.1', 2:'Nv.2', 3:'Nv.3' };
+  const comPct      = { 1:'10%', 2:'5%', 3:'2%' };
+
+  if(!miembrosDetalle.length){
+    listaEl.innerHTML = `
+      <div style="text-align:center;padding:24px 0;color:#3a5a3e;font-weight:700;font-size:13px;">
+        Sin invitados aún 🐸<br>
+        <span style="font-size:11px;font-weight:600;">Comparte tu código para crecer tu equipo</span>
+      </div>`;
+    return;
+  }
+
+  // Separar por niveles para el resumen
+  const n1 = miembrosDetalle.filter(m=>m.nivel===1);
+  const n2 = miembrosDetalle.filter(m=>m.nivel===2);
+  const n3 = miembrosDetalle.filter(m=>m.nivel===3);
+
+  listaEl.innerHTML = `
+    <!-- Resumen por nivel -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+      <div style="background:rgba(75,245,66,0.07);border:1px solid rgba(75,245,66,0.2);border-radius:12px;padding:12px 8px;text-align:center;">
+        <div style="font-size:10px;color:#5a7a5e;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Nivel 1</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:22px;color:#4bf542;">${n1.length}</div>
+        <div style="font-size:10px;color:#4bf542;font-weight:700;">10% comisión</div>
+      </div>
+      <div style="background:rgba(255,204,0,0.07);border:1px solid rgba(255,204,0,0.2);border-radius:12px;padding:12px 8px;text-align:center;">
+        <div style="font-size:10px;color:#5a7a5e;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Nivel 2</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:22px;color:#ffcc00;">${n2.length}</div>
+        <div style="font-size:10px;color:#ffcc00;font-weight:700;">5% comisión</div>
+      </div>
+      <div style="background:rgba(136,170,255,0.07);border:1px solid rgba(136,170,255,0.2);border-radius:12px;padding:12px 8px;text-align:center;">
+        <div style="font-size:10px;color:#5a7a5e;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Nivel 3</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:22px;color:#88aaff;">${n3.length}</div>
+        <div style="font-size:10px;color:#88aaff;font-weight:700;">2% comisión</div>
+      </div>
+    </div>
+
+    <!-- Título lista -->
+    <div style="font-family:'Fredoka One',cursive;font-size:16px;color:var(--green);margin-bottom:10px;letter-spacing:0.5px;">
+      👥 Miembros de tu equipo
+    </div>
+
+    <!-- Lista -->
+    ${miembrosDetalle.map(m => `
+      <div style="background:var(--card-bg);border:1px solid ${m.califica ? 'rgba(75,245,66,0.25)' : 'rgba(255,255,255,0.05)'};border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+        <!-- Avatar -->
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#0a1f0c,#0d2e12);border:2px solid ${nivelColor[m.nivel]};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🐸</div>
+        <!-- Info -->
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+            <span style="font-size:13px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.nombre}</span>
+            <span style="font-size:9px;font-weight:800;color:${nivelColor[m.nivel]};background:${nivelColor[m.nivel]}18;border:1px solid ${nivelColor[m.nivel]}44;border-radius:6px;padding:1px 6px;flex-shrink:0;">${nivelLabel[m.nivel]}</span>
+          </div>
+          <div style="font-size:10px;color:#5a7a5e;font-weight:700;">
+            Invertido: <b style="color:white;">$${m.totalInvertido.toFixed(2)}</b>
+            &nbsp;·&nbsp; Comisión: <b style="color:${nivelColor[m.nivel]};">${comPct[m.nivel]}</b>
+          </div>
+        </div>
+        <!-- Estado -->
+        <div style="flex-shrink:0;text-align:center;">
+          ${m.califica
+            ? `<div style="font-size:10px;font-weight:800;color:#4bf542;background:rgba(75,245,66,0.1);border:1px solid rgba(75,245,66,0.25);border-radius:8px;padding:4px 8px;">✅ Activo</div>`
+            : `<div style="font-size:10px;font-weight:800;color:#5a7a5e;background:rgba(90,122,94,0.08);border:1px solid rgba(90,122,94,0.2);border-radius:8px;padding:4px 8px;">⏳ Pendiente</div>`
+          }
+          ${m.nivel===1 && m.califica
+            ? `<div style="font-size:9px;color:#4bf542;font-weight:700;margin-top:3px;">VIP ✓</div>`
+            : m.nivel===1
+            ? `<div style="font-size:9px;color:#5a7a5e;font-weight:700;margin-top:3px;">VIP ✗</div>`
+            : ''
+          }
+        </div>
+      </div>
+    `).join('')}
+  `;
 }
 
 // Actualizar tarjetas VIP con progreso real
